@@ -2396,6 +2396,13 @@ function triggerGameOver(){
 
   let gamePaused = true; // menü açık olduğu için başlangıçta duraklı
 
+  // Oyunu duraklatırken toplardaki kalan hızı da sıfırlar — böylece duraklatma bitince
+  // "birikmiş enerji" birden boşalıp toplar patlamış gibi fırlamıyor, direkt donup kalıyorlar.
+  function pauseGameNow(){
+    gamePaused = true;
+    balls.forEach(b => { b.vx = 0; b.vy = 0; });
+  }
+
   function loop(now){
     let dt = (now - lastTime)/1000;
     lastTime = now;
@@ -3787,7 +3794,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
   async function openLeaderboard(){
     const modal = document.getElementById('leaderboardModal');
     modal.style.display = 'flex';
-    gamePaused = true;
+    pauseGameNow();
     activeTab = 'alltime';
     friendsModeOn = false;
     updateFriendsToggleUI();
@@ -3862,7 +3869,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
 
   document.getElementById('btnJokerPanel').addEventListener('click', () => {
     document.getElementById('jokerPanel').style.display = 'flex';
-    gamePaused = true;
+    pauseGameNow();
   });
 
   document.getElementById('jokerPanelKapat').addEventListener('click', () => {
@@ -4340,7 +4347,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
 
   // Ana menüye dön butonu
   document.getElementById('homeBtn').addEventListener('click', function() {
-    gamePaused = true;
+    pauseGameNow();
     showConfirmModal(function() {
       saveGameState();
       document.getElementById('mainMenu').style.display = 'flex';
@@ -4359,7 +4366,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
   document.getElementById('topAtBtn').addEventListener('click', function() {
     if(topAtUsed) return;
     document.getElementById('topAtModal').style.display = 'flex';
-    gamePaused = true;
+    pauseGameNow();
   });
 
   document.getElementById('topAtKapat').addEventListener('click', function() {
@@ -4368,6 +4375,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
   });
 
   let dropSession = 0;
+  let ballRainActive = false;
 
   document.querySelectorAll('.topAtOption').forEach(function(btn) {
     btn.addEventListener('click', function() {
@@ -4378,9 +4386,11 @@ document.getElementById('restartBtn').addEventListener('click', function() {
       updateTopAtBtn();
       let dropped = 0;
       const session = ++dropSession;
+      ballRainActive = true;
       function dropOne() {
-        if(session !== dropSession) return; // yeni oyun başladıysa dur
-        if(dropped >= count || gameOver) return;
+        if(session !== dropSession) { ballRainActive = false; return; } // yeni oyun başladıysa dur
+        if(dropped >= count || gameOver) { ballRainActive = false; return; }
+        if(gamePaused){ setTimeout(dropOne, 150); return; } // menü/panel açıksa top eklemeden bekle
         fastDropBall();
         dropped++;
         setTimeout(dropOne, 150);
