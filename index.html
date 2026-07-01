@@ -205,6 +205,7 @@
     #visualSelectModal, #visualSelectModal *,
     #leaderboardModal, #leaderboardModal *,
     #publicProfileModal, #publicProfileModal *,
+    #photoSourceModal, #photoSourceModal *,
     #gameOverOverlay, #gameOverOverlay *,
     #settingsModal, #settingsModal * {
       touch-action: auto !important;
@@ -829,6 +830,24 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
 </div>
 
 <input type="file" id="fileInput" accept="image/*">
+<input type="file" id="fileInputCamera" accept="image/*" capture="environment">
+<input type="file" id="friendPhotoInputCamera" accept="image/*" capture="environment" style="display:none;">
+
+<!-- Kamera / Galeri seçim penceresi -->
+<div id="photoSourceModal" style="display:none;position:fixed;inset:0;background:rgba(58,43,34,0.7);z-index:10004;align-items:center;justify-content:center;">
+  <div style="background:#FFF8F5;border-radius:24px;padding:22px;width:80%;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.25);text-align:center;">
+    <div id="photoSourceTitle" style="font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:800;color:#4E342E;margin-bottom:16px;">Fotoğraf Nereden?</div>
+    <button id="photoSourceCamera" style="width:100%;background:#FF7043;color:#fff;border:none;border-radius:14px;padding:13px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:10px;">
+      📷 <span id="photoSourceCameraLabel">Fotoğraf Çek</span>
+    </button>
+    <button id="photoSourceGallery" style="width:100%;background:#5C6BC0;color:#fff;border:none;border-radius:14px;padding:13px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:10px;">
+      🖼️ <span id="photoSourceGalleryLabel">Galeriden Seç</span>
+    </button>
+    <button id="photoSourceCancel" style="width:100%;background:transparent;color:#8D6E63;border:2px solid #e0c9a6;border-radius:14px;padding:11px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:14px;cursor:pointer;">
+      <span id="photoSourceCancelLabel">İptal</span>
+    </button>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -1356,6 +1375,7 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       kullaniciAdiDegisimNotu: 'ℹ️ Önceki skorlardaki ismin değişmez, sadece bundan sonrakiler yeni ismi kullanır.',
       arkadaslarinFotoBaslik: 'ARKADAŞLARIN GÖRDÜĞÜ FOTOĞRAF', fotografDegistir: 'Fotoğraf Değiştir',
       arkadasFotoNotu: 'ℹ️ Bu fotoğraf sadece arkadaşların gördüğü ekranlarda görünür, herkese açık skor tablosunda görünmez.',
+      fotoNereden: 'Fotoğraf Nereden?', fotoCek: 'Fotoğraf Çek', galeridenSec: 'Galeriden Seç',
       kullaniciAdiYok: 'Henüz belirlenmedi', degistirBtn: 'Değiştir', kaydetBtn: 'Kaydet', kullaniciAdiBaslik: 'KULLANICI ADI',
       kodIleIceAktar: 'Kod ile İçe Aktar',
       arkadaslarim: 'Arkadaşlarım', arkadaslar: 'Arkadaşlar', genel: 'Genel', ekle: 'Ekle', kullaniciAdiYaz: 'Kullanıcı adı...',
@@ -1428,6 +1448,7 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       kullaniciAdiDegisimNotu: 'ℹ️ Your name on past scores stays the same, only new scores use the updated name.',
       arkadaslarinFotoBaslik: 'PHOTO YOUR FRIENDS SEE', fotografDegistir: 'Change Photo',
       arkadasFotoNotu: "ℹ️ This photo is only visible to your friends, not on the public leaderboard.",
+      fotoNereden: 'Photo Source?', fotoCek: 'Take Photo', galeridenSec: 'Choose from Gallery',
       kullaniciAdiYok: 'Not set yet', degistirBtn: 'Edit', kaydetBtn: 'Save', kullaniciAdiBaslik: 'USERNAME',
       kodIleIceAktar: 'Import with Code',
       arkadaslarim: 'My Friends', arkadaslar: 'Friends', genel: 'General', ekle: 'Add', kullaniciAdiYaz: 'Username...',
@@ -1513,6 +1534,10 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
     setText('friendPhotoLabel', L.arkadaslarinFotoBaslik);
     setText('changeFriendPhotoLabel', L.fotografDegistir);
     setText('friendPhotoNote', L.arkadasFotoNotu);
+    setText('photoSourceTitle', L.fotoNereden);
+    setText('photoSourceCameraLabel', L.fotoCek);
+    setText('photoSourceGalleryLabel', L.galeridenSec);
+    setText('photoSourceCancelLabel', L.iptal);
     setText('ppBadgesTitle', L.rozetlerBaslik);
     setText('ppStatsTitle', L.istatistiklerBaslik);
     setText('ppStatHighLabel', L.enYuksekSkorLabel);
@@ -2525,14 +2550,35 @@ function triggerGameOver(){
       card.appendChild(label);
       card.addEventListener('click', ()=>{
         pendingLevel = idx;
-        fileInput.click();
+        openPhotoSourceChooser('ball');
       });
       levelGrid.appendChild(card);
     });
   }
 
-  fileInput.addEventListener('change', ()=>{
-    const file = fileInput.files[0];
+  // ---------- Kamera / Galeri seçim penceresi ----------
+  let pendingPhotoTarget = null; // 'ball' | 'friend'
+
+  function openPhotoSourceChooser(target){
+    pendingPhotoTarget = target;
+    document.getElementById('photoSourceModal').style.display = 'flex';
+  }
+  function closePhotoSourceChooser(){
+    document.getElementById('photoSourceModal').style.display = 'none';
+  }
+  document.getElementById('photoSourceCamera').addEventListener('click', () => {
+    closePhotoSourceChooser();
+    if(pendingPhotoTarget === 'ball') document.getElementById('fileInputCamera').click();
+    else if(pendingPhotoTarget === 'friend') document.getElementById('friendPhotoInputCamera').click();
+  });
+  document.getElementById('photoSourceGallery').addEventListener('click', () => {
+    closePhotoSourceChooser();
+    if(pendingPhotoTarget === 'ball') fileInput.click();
+    else if(pendingPhotoTarget === 'friend') document.getElementById('friendPhotoInput').click();
+  });
+  document.getElementById('photoSourceCancel').addEventListener('click', closePhotoSourceChooser);
+
+  function handleBallPhotoFile(file){
     if(!file || pendingLevel===null) return;
     const reader = new FileReader();
     reader.onload = async ev=>{
@@ -2549,7 +2595,15 @@ function triggerGameOver(){
       img.src = base64;
     };
     reader.readAsDataURL(file);
+  }
+
+  fileInput.addEventListener('change', ()=>{
+    handleBallPhotoFile(fileInput.files[0]);
     fileInput.value = '';
+  });
+  document.getElementById('fileInputCamera').addEventListener('change', function(){
+    handleBallPhotoFile(this.files[0]);
+    this.value = '';
   });
 
   document.getElementById('closeSettings').addEventListener('click', ()=>{
@@ -3104,12 +3158,10 @@ document.getElementById('restartBtn').addEventListener('click', function() {
   });
 
   document.getElementById('changeFriendPhotoBtn').addEventListener('click', function(){
-    document.getElementById('friendPhotoInput').click();
+    openPhotoSourceChooser('friend');
   });
 
-  document.getElementById('friendPhotoInput').addEventListener('change', function(){
-    const file = this.files[0];
-    this.value = '';
+  function handleFriendPhotoFile(file){
     if(!file) return;
     const btn = document.getElementById('changeFriendPhotoBtn');
     const reader = new FileReader();
@@ -3124,6 +3176,15 @@ document.getElementById('restartBtn').addEventListener('click', function() {
       btn.disabled = false;
     };
     reader.readAsDataURL(file);
+  }
+
+  document.getElementById('friendPhotoInput').addEventListener('change', function(){
+    handleFriendPhotoFile(this.files[0]);
+    this.value = '';
+  });
+  document.getElementById('friendPhotoInputCamera').addEventListener('change', function(){
+    handleFriendPhotoFile(this.files[0]);
+    this.value = '';
   });
 
   document.getElementById('saveUsernameBtn').addEventListener('click', async function(){
