@@ -350,6 +350,7 @@
             <span style="font-size:18px;">ℹ️</span>
             <span id="menuAboutLabel" style="font-size:13px;">Hakkında</span>
         </button>
+        <div style="text-align:center;font-size:11px;color:#c9a988;margin-top:2px;">🔧 build v13 — 3-2-1 duraklama düzeltmesi</div>
     </div>
 </div>
 <div id="app">
@@ -4396,7 +4397,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
       const count = parseInt(this.dataset.count);
       document.getElementById('topAtModal').style.display = 'none';
       gamePaused = false;
-      topAtUsed = true;
+      topAtUsed = false; // TEST BUILD: sınırsız — normale döndürmek için "false" yerine "true" yaz
       updateTopAtBtn();
       let dropped = 0;
       const session = ++dropSession;
