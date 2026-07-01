@@ -2403,10 +2403,24 @@ function triggerGameOver(){
     balls.forEach(b => { b.vx = 0; b.vy = 0; });
   }
 
+  let wasPausedLastFrame = gamePaused;
+  let pauseStartedAt = null;
+
   function loop(now){
     let dt = (now - lastTime)/1000;
     lastTime = now;
     dt = Math.min(dt, 0.05);
+
+    // Duraklatıldığı sürece geçen gerçek zamanı tehlike sayacından düşür,
+    // yoksa joker seçerken geçen süre "3 saniye doldu" diye sayılıp oyun anında bitiyordu.
+    if(gamePaused && !wasPausedLastFrame){
+      pauseStartedAt = now;
+    }
+    if(!gamePaused && wasPausedLastFrame && pauseStartedAt !== null){
+      if(overLineSince !== null) overLineSince += (now - pauseStartedAt);
+      pauseStartedAt = null;
+    }
+    wasPausedLastFrame = gamePaused;
 
     if(!gameOver && !gamePaused){
       let remaining = dt;
