@@ -113,12 +113,14 @@
       background:rgba(58,43,34,0.78);
       border-radius:18px;
       display:none;
-      align-items:center; justify-content:center;
+      align-items:center; justify-content:flex-start;
       flex-direction:column;
       text-align:center;
       color:#fff;
       padding:20px;
       backdrop-filter:blur(2px);
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
     }
     #gameOverOverlay.show{ display:flex; }
     #gameOverOverlay h2{
@@ -206,7 +208,12 @@
     #leaderboardModal, #leaderboardModal *,
     #publicProfileModal, #publicProfileModal *,
     #photoSourceModal, #photoSourceModal *,
+    #badgeDetailModal, #badgeDetailModal *,
+    #userScoresModal, #userScoresModal *,
+    #allBadgesModal, #allBadgesModal *,
     #gameOverOverlay, #gameOverOverlay *,
+    #tutorialModal, #tutorialModal *,
+    #questsModal, #questsModal *,
     #settingsModal, #settingsModal * {
       touch-action: auto !important;
       -webkit-user-select: auto !important;
@@ -269,11 +276,30 @@
     }
     #settingsPanel{ position:relative; }
     #fileInput{ display:none; }
-  </style>
+    #fileInputCamera{ display:none; }
+  
+    /* Skor tablosu: birleşik "segmented control" pil grupları — Genel/Arkadaşlar,
+       Klasik/Zaman/Deneme, Tüm Zamanlar/Bu Hafta/Bugün hepsi bu ortak stili paylaşır. */
+    .lbSegment{
+      display:flex; gap:2px; background:rgba(255,255,255,0.08);
+      border-radius:20px; padding:3px; width:100%; max-width:320px; margin-bottom:8px;
+    }
+    .lbSegBtn{
+      flex:1; border:none; border-radius:17px; padding:7px 6px;
+      font-weight:700; font-size:0.74rem; cursor:pointer;
+      background:transparent; color:rgba(255,255,255,0.65);
+      white-space:nowrap; font-family:'Nunito',sans-serif; transition:background 0.15s,color 0.15s;
+    }
+    @keyframes tutPulseAnim {
+      0%, 100% { transform: scale(1); box-shadow: 0 2px 0 #5a2d75, 0 0 0 0 rgba(255,215,0,0.7); }
+      50% { transform: scale(1.12); box-shadow: 0 2px 0 #5a2d75, 0 0 0 10px rgba(255,215,0,0); }
+    }
+    .tutPulse { animation: tutPulseAnim 1s ease-in-out infinite; }
+</style>
 </head>
 <body>
 <!-- Ana Menü -->
-<div id="mainMenu" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#FFE0B2;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;">
+<div id="mainMenu" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#FFE0B2;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:24px;overflow-y:auto;-webkit-overflow-scrolling:touch;">
     <div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;pointer-events:none;">
         <div style="position:absolute;width:72px;height:72px;border-radius:50%;background:#EF5350;opacity:0.45;top:55px;left:16px;"></div>
         <div style="position:absolute;width:54px;height:54px;border-radius:50%;background:#42A5F5;opacity:0.45;top:35px;right:24px;"></div>
@@ -286,7 +312,7 @@
         <div style="font-size:64px;">🧺</div>
         <div style="font-size:32px;font-weight:700;color:#4E342E;font-family:'Nunito',sans-serif;">Ball Basket</div>
         <div id="menuSubtitle" style="font-size:14px;color:#8D6E63;margin-top:4px;">Topları birleştir, yüksek skor yap</div>
-        <div style="text-align:center;font-size:12px;font-weight:800;color:#FF7043;margin-top:6px;background:#fff;display:inline-block;padding:3px 10px;border-radius:10px;">🔧 build v13</div>
+        <div style="text-align:center;font-size:12px;font-weight:800;color:#FF7043;margin-top:6px;background:#fff;display:inline-block;padding:3px 10px;border-radius:10px;">🔧 build v95</div>
     </div>
     <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:12px;position:relative;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -333,6 +359,34 @@
             </div>
             <span style="font-size:20px;">›</span>
         </button>
+        <button id="menuGrowingBtn" style="background:#8E24AA;border:none;border-radius:16px;padding:14px 18px;color:white;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:'Nunito',sans-serif;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <span style="font-size:22px;">🫙</span>
+                <div style="text-align:left;">
+                    <div id="menuGrowingTitle" style="font-size:14px;font-weight:600;">Büyüyen Kavanoz</div>
+                    <div id="menuGrowingSub" style="font-size:11px;opacity:0.85;">Dar başlar, puan yaptıkça genişler</div>
+                </div>
+            </div>
+            <span style="font-size:20px;">›</span>
+        </button>
+        <button id="menuDailyBtn" style="background:#00897B;border:none;border-radius:16px;padding:14px 18px;color:white;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:'Nunito',sans-serif;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <span style="font-size:22px;">🗓️</span>
+                <div style="text-align:left;">
+                    <div id="menuDailyTitle" style="font-size:14px;font-weight:600;">Günün Denemesi</div>
+                    <div id="menuDailySub" style="font-size:11px;opacity:0.85;">Herkese aynı toplar, günde tek hak</div>
+                    <div id="menuDailyCountdown" style="font-size:10.5px;opacity:0.8;margin-top:1px;">⏳ --:--:--</div>
+                </div>
+            </div>
+            <span style="font-size:20px;">›</span>
+        </button>
+        <button id="menuQuestsBtn" style="background:#8D6E63;border:none;border-radius:16px;padding:14px 18px;color:white;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:'Nunito',sans-serif;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <span style="font-size:22px;">🎯</span>
+                <span id="menuGorevlerLabel" style="font-size:14px;font-weight:600;">Görevler ve Ödüller</span>
+            </div>
+            <span id="menuStreakChip" style="background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:10px;font-size:13px;font-weight:800;">🔥 1</span>
+        </button>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <button id="menuPhotosBtn" style="background:#FFF8F5;border:1px solid #FFAB91;border-radius:14px;padding:16px 10px;color:#4E342E;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font-family:'Nunito',sans-serif;">
                 <span style="font-size:24px;">📷</span>
@@ -355,9 +409,12 @@
 </div>
 <div id="app">
   <header>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <h1>Ball Basket</h1>
-        <div id="timerDisplay" style="display:none;background:#5C6BC0;color:#fff;font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1rem;border-radius:10px;padding:4px 10px;">3:00</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <h1>Ball Basket</h1>
+          <div id="timerDisplay" style="display:none;background:#5C6BC0;color:#fff;font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1rem;border-radius:10px;padding:4px 10px;">3:00</div>
+        </div>
+        <div id="growingLevelBadge" style="display:none;background:#8E24AA;color:#fff;font-family:'Baloo 2',sans-serif;font-weight:800;font-size:2.2rem;border-radius:14px;padding:6px 16px;white-space:nowrap;">🏅 1</div>
       </div>
     <div style="display:flex;align-items:center;gap:3px;">
       <button id="btnSmallJoker" style="display:none;"></button>
@@ -378,6 +435,22 @@
     <div id="gameOverOverlay">
       <h2 id="gameOverTitle">Kavanoz taştı! 🫠</h2>
       <p id="finalScoreText">Skor: 0</p>
+      <button id="shareScoreBtn" style="background:rgba(255,255,255,0.18);border:2px solid rgba(255,255,255,0.35);border-radius:20px;padding:7px 18px;color:#fff;font-size:0.82rem;font-weight:700;cursor:pointer;margin-bottom:10px;font-family:'Nunito',sans-serif;display:flex;align-items:center;gap:6px;"><span id="shareScoreLabel">📤 Skoru Paylaş</span></button>
+
+      <div id="goStatsRow" style="display:flex;gap:8px;width:86%;max-width:300px;margin-bottom:12px;">
+        <div style="flex:1;background:rgba(255,255,255,0.12);border-radius:12px;padding:8px 4px;text-align:center;">
+          <div id="goStatCombo" style="font-size:16px;font-weight:800;color:#FFD54F;">-</div>
+          <div id="goStatComboLbl" style="font-size:10px;opacity:0.8;">En iyi kombo</div>
+        </div>
+        <div style="flex:1;background:rgba(255,255,255,0.12);border-radius:12px;padding:8px 4px;text-align:center;">
+          <div id="goStatMerge" style="font-size:16px;font-weight:800;color:#FFD54F;">-</div>
+          <div id="goStatMergeLbl" style="font-size:10px;opacity:0.8;">Birleşme</div>
+        </div>
+        <div id="goStatRecordBox" style="flex:1.3;background:rgba(255,255,255,0.12);border-radius:12px;padding:8px 4px;text-align:center;">
+          <div id="goStatRecord" style="font-size:13px;font-weight:800;color:#FFD54F;line-height:1.2;padding-top:2px;">-</div>
+          <div id="goStatRecordLbl" style="font-size:10px;opacity:0.8;">Rekor</div>
+        </div>
+      </div>
 
       <div id="goXpSection" style="display:none;width:80%;max-width:280px;background:rgba(255,255,255,0.12);border-radius:14px;padding:12px 14px;margin-bottom:14px;">
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
@@ -411,35 +484,46 @@
         <button onclick="closeLeaderboard()" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:32px;height:32px;color:#fff;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
       </div>
       <!-- Genel / Arkadaşlar seçimi -->
-      <div style="display:flex;gap:6px;margin-bottom:8px;">
-        <button id="scopeGeneralBtn" onclick="setLeaderboardScope(false)"
-          style="padding:5px 12px;border-radius:20px;border:none;font-weight:700;font-size:0.75rem;cursor:pointer;background:#FFE9C7;color:#3a2b22;">🌍 <span id="scopeGeneralLabel">Genel</span></button>
-        <button id="scopeFriendsBtn" onclick="setLeaderboardScope(true)"
-          style="padding:5px 12px;border-radius:20px;border:2px solid rgba(255,255,255,0.3);font-weight:700;font-size:0.75rem;cursor:pointer;background:transparent;color:rgba(255,255,255,0.7);">👥 <span id="scopeFriendsLabel">Arkadaşlar</span></button>
+      <div class="lbSegment">
+        <button id="scopeGeneralBtn" class="lbSegBtn" onclick="setLeaderboardScope(false)">🌍 <span id="scopeGeneralLabel">Genel</span></button>
+        <button id="scopeFriendsBtn" class="lbSegBtn" onclick="setLeaderboardScope(true)">👥 <span id="scopeFriendsLabel">Arkadaşlar</span></button>
       </div>
       <!-- Mod seçimi -->
-      <div style="display:flex;gap:6px;margin-bottom:8px;">
-        <button id="modeClassicBtn" onclick="switchMode('classic')"
-          style="padding:5px 12px;border-radius:20px;border:none;font-weight:700;font-size:0.75rem;cursor:pointer;background:#FF7043;color:#fff;"><span id="modeClassicLabel">🎯 Klasik</span></button>
-        <button id="modeTimeBtn" onclick="switchMode('time')"
-          style="padding:5px 12px;border-radius:20px;border:2px solid rgba(255,255,255,0.3);font-weight:700;font-size:0.75rem;cursor:pointer;background:transparent;color:rgba(255,255,255,0.7);"><span id="modeTimeLabel">⏱️ Zaman</span></button>
+      <div class="lbSegment">
+        <button id="modeClassicBtn" class="lbSegBtn" onclick="switchMode('classic')"><span id="modeClassicLabel">🎯 Klasik</span></button>
+        <button id="modeTimeBtn" class="lbSegBtn" onclick="switchMode('time')"><span id="modeTimeLabel">⏱️ Zaman</span></button>
+        <button id="modeGrowingBtn" class="lbSegBtn" onclick="switchMode('growing')"><span id="modeGrowingLabel">🫙 Büyüyen</span></button>
+        <button id="modeDailyChBtn" class="lbSegBtn" onclick="switchMode('daily_ch')"><span id="modeDailyChLabel">🗓️ Deneme</span></button>
       </div>
-      <!-- Klasik sekmeler -->
-      <div id="classicTabs" style="display:flex;gap:8px;margin-bottom:10px;">
-        <button id="allTimeTab" onclick="switchTab('alltime')"
-          style="padding:6px 14px;border-radius:20px;border:none;font-weight:700;font-size:0.8rem;cursor:pointer;background:#FFE9C7;color:#3a2b22;">🌟 Tüm Zamanlar</button>
-        <button id="todayTab" onclick="switchTab('daily')"
-          style="padding:6px 14px;border-radius:20px;border:2px solid rgba(255,255,255,0.3);font-weight:700;font-size:0.8rem;cursor:pointer;background:transparent;color:rgba(255,255,255,0.7);">☀️ Bugün</button>
+      <!-- Klasik: zaman aralığı -->
+      <div id="classicTabs" class="lbSegment">
+        <button id="allTimeTab" class="lbSegBtn" onclick="switchTab('alltime')">🌟 <span id="allTimeLbl">Tüm Zamanlar</span></button>
+        <button id="weekTab" class="lbSegBtn" onclick="switchTab('week')">📅 <span id="weekTabLbl">Bu Hafta</span></button>
+        <button id="todayTab" class="lbSegBtn" onclick="switchTab('daily')">☀️ <span id="todayTabLbl">Bugün</span></button>
       </div>
-      <!-- Zaman sekmeler -->
-      <div id="timeTabs" style="display:none;gap:8px;margin-bottom:10px;">
-        <button id="time60Tab" onclick="switchTimeTab(60)"
-          style="padding:6px 14px;border-radius:20px;border:none;font-weight:700;font-size:0.8rem;cursor:pointer;background:#FFE9C7;color:#3a2b22;">1 <span class="sureBirimi">dk</span></button>
-        <button id="time180Tab" onclick="switchTimeTab(180)"
-          style="padding:6px 14px;border-radius:20px;border:2px solid rgba(255,255,255,0.3);font-weight:700;font-size:0.8rem;cursor:pointer;background:transparent;color:rgba(255,255,255,0.7);">3 <span class="sureBirimi">dk</span></button>
-        <button id="time300Tab" onclick="switchTimeTab(300)"
-          style="padding:6px 14px;border-radius:20px;border:2px solid rgba(255,255,255,0.3);font-weight:700;font-size:0.8rem;cursor:pointer;background:transparent;color:rgba(255,255,255,0.7);">5 <span class="sureBirimi">dk</span></button>
+      <!-- Zaman Modu: süre kategorisi -->
+      <div id="timeTabs" class="lbSegment" style="display:none;">
+        <button id="time60Tab" class="lbSegBtn" onclick="switchTimeTab(60)">1 <span class="sureBirimi">dk</span></button>
+        <button id="time180Tab" class="lbSegBtn" onclick="switchTimeTab(180)">3 <span class="sureBirimi">dk</span></button>
+        <button id="time300Tab" class="lbSegBtn" onclick="switchTimeTab(300)">5 <span class="sureBirimi">dk</span></button>
       </div>
+      <!-- Zaman Modu: zaman aralığı (Klasik'teki ile aynı fikir, tutarlılık için) -->
+      <div id="timeDateTabs" class="lbSegment" style="display:none;">
+        <button id="timeAllTimeTab" class="lbSegBtn" onclick="switchTimeDateTab('alltime')">🌟 <span id="timeAllTimeLbl">Tüm Zamanlar</span></button>
+        <button id="timeWeekTab" class="lbSegBtn" onclick="switchTimeDateTab('week')">📅 <span id="timeWeekLbl">Bu Hafta</span></button>
+        <button id="timeTodayTab" class="lbSegBtn" onclick="switchTimeDateTab('daily')">☀️ <span id="timeTodayLbl">Bugün</span></button>
+      </div>
+      <!-- Büyüyen Kavanoz: zaman aralığı (kendi bağımsız kategorisi) -->
+      <div id="growingTabs" class="lbSegment" style="display:none;">
+        <button id="growingAllTimeTab" class="lbSegBtn" onclick="switchGrowingDateTab('alltime')">🌟 <span id="growingAllTimeLbl">Tüm Zamanlar</span></button>
+        <button id="growingWeekTab" class="lbSegBtn" onclick="switchGrowingDateTab('week')">📅 <span id="growingWeekLbl">Bu Hafta</span></button>
+        <button id="growingTodayTab" class="lbSegBtn" onclick="switchGrowingDateTab('daily')">☀️ <span id="growingTodayLbl">Bugün</span></button>
+      </div>
+      <!-- Deneme sekmeler -->
+      <div id="dailyChTabs" style="display:none;margin-bottom:10px;">
+        <div style="padding:5px 14px;border-radius:20px;background:rgba(255,233,199,0.15);color:#FFE9C7;font-weight:700;font-size:0.75rem;">☀️ <span id="dailyChTodayLbl">Bugünkü Deneme</span> — <span id="dailyChDate"></span> &nbsp;·&nbsp; <span id="dailyChCountdown">⏳ --:--:--</span></div>
+      </div>
+      <div id="myRankBar" style="display:none;"></div>
       <div id="leaderboardList" style="width:100%;max-width:320px;flex:1;overflow-y:auto;"></div>
     </div>
   </div>
@@ -524,23 +608,29 @@
 
 <!-- Joker Paneli -->
 <div id="jokerPanel" style="display:none;position:fixed;inset:0;z-index:3000;align-items:flex-end;justify-content:center;background:rgba(58,43,34,0.6);">
-  <div style="background:#FFF8F5;border-radius:24px 24px 0 0;padding:20px 20px 32px;width:100%;max-width:480px;box-shadow:0 -4px 24px rgba(0,0,0,0.2);">
+  <div style="background:#FFF8F5;border-radius:24px 24px 0 0;padding:20px 20px 32px;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:0 -4px 24px rgba(0,0,0,0.2);">
     <div id="jokerPanelTitle" style="text-align:center;font-size:13px;font-weight:800;color:#8D6E63;margin-bottom:16px;letter-spacing:0.5px;text-transform:uppercase;">Jokerler</div>
     <div style="display:flex;gap:10px;justify-content:center;">
       <button id="panelSmallJoker" style="flex:1;background:#f08c1a;box-shadow:0 3px 0 #c2690b;border:none;border-radius:16px;padding:16px 8px;color:#fff;font-family:'Baloo 2',sans-serif;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
-        <span style="font-size:28px;">💣</span>
-        <span id="kucukBombaLabel" style="font-size:13px;font-weight:800;">Küçük Bomba</span>
+        <span style="font-size:28px;">⬆️</span>
+        <span id="kucukBombaLabel" style="font-size:13px;font-weight:800;">Yükselt</span>
+        <span id="kucukBombaDesc" style="font-size:10px;opacity:0.9;line-height:1.25;font-family:'Nunito',sans-serif;">Seçtiğin topu bir üst seviyeye çıkarır</span>
         <span id="panelSmallCount" style="font-size:12px;opacity:0.85;">(3 hak)</span>
+        <span id="adBtnSmall" class="jokerAdBtn" style="margin-top:4px;background:rgba(255,255,255,0.22);border-radius:10px;padding:4px 10px;font-size:11px;font-weight:800;font-family:'Nunito',sans-serif;">📺 +1</span>
       </button>
       <button id="panelBigJoker" style="flex:1;background:#e8425b;box-shadow:0 3px 0 #c22e46;border:none;border-radius:16px;padding:16px 8px;color:#fff;font-family:'Baloo 2',sans-serif;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
-        <span style="font-size:28px;">🧨</span>
-        <span id="buyukBombaLabel" style="font-size:13px;font-weight:800;">Büyük Bomba</span>
+        <span style="font-size:28px;">📌</span>
+        <span id="buyukBombaLabel" style="font-size:13px;font-weight:800;">İğne</span>
+        <span id="buyukBombaDesc" style="font-size:10px;opacity:0.9;line-height:1.25;font-family:'Nunito',sans-serif;">Seçtiğin her boy topu patlatır</span>
         <span id="panelBigCount" style="font-size:12px;opacity:0.85;">(1 hak)</span>
+        <span id="adBtnBig" class="jokerAdBtn" style="margin-top:4px;background:rgba(255,255,255,0.22);border-radius:10px;padding:4px 10px;font-size:11px;font-weight:800;font-family:'Nunito',sans-serif;">📺 +1</span>
       </button>
       <button id="panelShuffle" style="flex:1;background:#2E7D32;box-shadow:0 3px 0 #1B5E20;border:none;border-radius:16px;padding:16px 8px;color:#fff;font-family:'Baloo 2',sans-serif;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
         <span style="font-size:28px;">🔀</span>
         <span id="karistirLabel" style="font-size:13px;font-weight:800;">Karıştır</span>
+        <span id="karistirDesc" style="font-size:10px;opacity:0.9;line-height:1.25;font-family:'Nunito',sans-serif;">Tüm topları havaya savurup karıştırır</span>
         <span id="panelShuffleCount" style="font-size:12px;opacity:0.85;">(1 hak)</span>
+        <span id="adBtnShuffle" class="jokerAdBtn" style="margin-top:4px;background:rgba(255,255,255,0.22);border-radius:10px;padding:4px 10px;font-size:11px;font-weight:800;font-family:'Nunito',sans-serif;">📺 +1</span>
       </button>
     </div>
     <button id="jokerPanelKapat" style="display:block;margin:16px auto 0;background:none;border:none;color:#8D6E63;font-size:14px;cursor:pointer;">İptal</button>
@@ -620,8 +710,8 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
 </div>
 
 <!-- Onay Modal -->
-<div id="confirmModal" style="display:none;position:fixed;inset:0;background:rgba(58,43,34,0.7);z-index:100;align-items:center;justify-content:center;">
-  <div style="background:#fffaf0;border-radius:20px;padding:24px 20px;margin:20px;text-align:center;max-width:300px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+<div id="confirmModal" style="display:none;position:fixed;inset:0;background:rgba(58,43,34,0.7);z-index:10003;align-items:center;justify-content:center;">
+  <div style="background:#fffaf0;border-radius:20px;padding:24px 20px;margin:20px;text-align:center;max-width:300px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
     <p id="confirmTitle" style="font-family:'Baloo 2',sans-serif;font-size:1rem;font-weight:700;color:#3a2b22;margin:0 0 6px;">Yeniden başlat?</p>
     <p id="confirmSubtitle" style="font-size:0.85rem;color:#7a4a30;margin:0 0 18px;">Tüm ilerlemeniz silinecek.</p>
     <div style="display:flex;gap:10px;justify-content:center;">
@@ -651,6 +741,37 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
   </div>
 </div>
 
+<!-- Günlük Görevler & Rozetler -->
+<div id="questsModal" style="display:none;position:fixed;inset:0;background:rgba(58,43,34,0.78);z-index:10001;align-items:center;justify-content:center;">
+  <div style="background:#FFF8F0;border-radius:24px;padding:22px 20px;width:88%;max-width:340px;max-height:82vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.35);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <div id="gorevlerBaslik" style="font-family:'Baloo 2',sans-serif;font-size:18px;font-weight:800;color:#4E342E;">🎯 Günlük Görevler</div>
+      <div id="questStreak" style="background:#FFE0B2;padding:4px 10px;border-radius:10px;font-size:13px;font-weight:800;color:#E65100;">🔥 1</div>
+    </div>
+    <div id="questResetNote" style="font-size:11px;color:#a07850;margin-bottom:10px;">Görevler her gün yenilenir</div>
+    <div id="bankRow" style="display:none;background:#FFF3E0;border-radius:12px;padding:8px 12px;margin-bottom:12px;font-size:12.5px;color:#4E342E;font-weight:700;align-items:center;justify-content:space-around;"></div>
+    <div id="questList"></div>
+    <button id="questsKapatBtn" style="display:block;width:100%;margin-top:16px;background:#FF7043;border:none;border-radius:14px;padding:12px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;">Kapat</button>
+  </div>
+</div>
+
+<!-- Mini Eğitim: giriş sorusu + bitiş kartı (eğitimin kendisi oyun içinde etkileşimli geçer) -->
+<div id="tutorialModal" style="display:none;position:fixed;inset:0;background:rgba(58,43,34,0.78);z-index:10002;align-items:center;justify-content:center;">
+  <div style="background:#FFF8F0;border-radius:24px;padding:26px 22px;width:86%;max-width:320px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.35);">
+    <div id="tutEmoji" style="font-size:52px;line-height:1;margin-bottom:12px;">🎓</div>
+    <div id="tutTitle" style="font-family:'Baloo 2',sans-serif;font-size:20px;font-weight:800;color:#4E342E;margin-bottom:8px;">Eğitim</div>
+    <div id="tutText" style="font-size:14px;color:#6b4a35;line-height:1.5;">...</div>
+    <div id="tutNote" style="display:none;font-size:11.5px;color:#a07850;line-height:1.4;margin-top:10px;">...</div>
+    <div id="tutPromptBtns" style="display:none;gap:10px;margin-top:18px;">
+      <button id="tutNoBtn" style="flex:1;background:#e8d9c3;border:none;border-radius:14px;padding:13px 8px;color:#6b4a35;font-size:14px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;">Hayır</button>
+      <button id="tutYesBtn" style="flex:1.3;background:#FF7043;border:none;border-radius:14px;padding:13px 8px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;">Evet, öğret!</button>
+    </div>
+    <button id="tutNextBtn" style="display:none;width:100%;margin-top:18px;background:#FF7043;border:none;border-radius:14px;padding:13px;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;">Tamam</button>
+  </div>
+</div>
+<!-- Eğitim yönerge bandı (oyunun üstünde, dokunuşları engellemez) -->
+<div id="tutBanner" style="display:none;position:fixed;top:calc(env(safe-area-inset-top, 0px) + 66px);left:50%;transform:translateX(-50%);z-index:9999;background:rgba(58,43,34,0.93);color:#FFE9C7;font-weight:800;font-size:13.5px;padding:10px 16px;border-radius:14px;max-width:86%;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.3);pointer-events:none;line-height:1.45;"></div>
+
 <!-- Ayarlar Modal -->
 <div id="gameSettingsModal" style="display:none;position:fixed;inset:0;background:rgba(58,43,34,0.7);z-index:10000;align-items:flex-end;justify-content:center;">
   <div style="background:#fff8f0;width:100%;border-radius:22px 22px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));max-height:80vh;overflow-y:auto;-webkit-overflow-scrolling:touch;">
@@ -666,6 +787,22 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       <div id="soundToggle" style="width:52px;height:28px;border-radius:14px;background:#FF7043;cursor:pointer;position:relative;transition:background 0.2s;">
         <div id="soundToggleKnob" style="width:22px;height:22px;border-radius:50%;background:white;position:absolute;top:3px;right:3px;transition:right 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></div>
       </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #eee0cc;">
+      <div>
+        <div id="muzikLabel" style="font-weight:700;color:#3a2b22;font-size:0.95rem;">🎵 Müzik</div>
+        <div id="muzikSubLabel" style="font-size:0.8rem;color:#7a4a30;margin-top:2px;">Arka plan müziği</div>
+      </div>
+      <div id="musicToggle" style="width:52px;height:28px;border-radius:14px;background:#FF7043;cursor:pointer;position:relative;transition:background 0.2s;">
+        <div id="musicToggleKnob" style="width:22px;height:22px;border-radius:50%;background:white;position:absolute;top:3px;right:3px;transition:right 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></div>
+      </div>
+    </div>
+    <div id="howToPlayRow" style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #eee0cc;cursor:pointer;">
+      <div>
+        <div id="nasilOynanirLabel" style="font-weight:700;color:#3a2b22;font-size:0.95rem;">📖 Nasıl Oynanır?</div>
+        <div id="nasilOynanirSubLabel" style="font-size:0.8rem;color:#7a4a30;margin-top:2px;">Kısa tanıtımı tekrar izle</div>
+      </div>
+      <span style="color:#7a4a30;font-size:1.1rem;">›</span>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #eee0cc;">
       <div>
@@ -748,17 +885,79 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
 </div>
 
 <!-- Seviye / Rozet / İstatistik Profil Modalı -->
+<!-- Rozet Detay Penceresi -->
+<!-- Tüm Rozetler Ekranı -->
+<div id="allBadgesModal" style="display:none;position:fixed;inset:0;background:rgba(58,43,34,0.96);z-index:10004;flex-direction:column;align-items:center;padding:14px 14px 10px;">
+  <div style="width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;max-width:400px;">
+    <h2 id="allBadgesTitle" style="color:#fff;font-family:inherit;margin:0;font-size:1.1rem;">🏅 Tüm Rozetler</h2>
+    <button onclick="closeAllBadgesModal()" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:32px;height:32px;color:#fff;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+  </div>
+  <div id="allBadgesSubtitle" style="color:rgba(255,255,255,0.7);font-size:12px;margin-bottom:14px;"></div>
+  <div id="allBadgesGrid" style="width:100%;max-width:400px;overflow-y:auto;flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding-bottom:20px;"></div>
+</div>
+
+<!-- Kişisel Skor Tablosu (bir kullanıcıya özel Top 5) -->
+<div id="userScoresModal" style="display:none;position:fixed;inset:0;background:rgba(58,43,34,0.96);z-index:10006;flex-direction:column;align-items:center;padding:14px 14px 10px;">
+  <div style="width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;max-width:400px;">
+    <h2 id="userScoresTitle" style="color:#fff;font-family:inherit;margin:0;font-size:1.05rem;"></h2>
+    <button onclick="closeUserScoresModal()" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:32px;height:32px;color:#fff;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:12px;width:100%;max-width:400px;overflow-x:auto;">
+    <button class="userScoreModeTab" data-mode="classic" style="padding:7px 14px;border-radius:20px;border:none;font-weight:700;font-size:0.75rem;cursor:pointer;background:#FFE9C7;color:#3a2b22;white-space:nowrap;">🎯 <span id="userScoreModeClassicLabel">Klasik</span></button>
+    <button class="userScoreModeTab" data-mode="time_1min" style="padding:7px 14px;border-radius:20px;border:2px solid rgba(255,255,255,0.3);font-weight:700;font-size:0.75rem;cursor:pointer;background:transparent;color:rgba(255,255,255,0.7);white-space:nowrap;">⏱️ 1 dk</button>
+    <button class="userScoreModeTab" data-mode="time_3min" style="padding:7px 14px;border-radius:20px;border:2px solid rgba(255,255,255,0.3);font-weight:700;font-size:0.75rem;cursor:pointer;background:transparent;color:rgba(255,255,255,0.7);white-space:nowrap;">⏱️ 3 dk</button>
+    <button class="userScoreModeTab" data-mode="time_5min" style="padding:7px 14px;border-radius:20px;border:2px solid rgba(255,255,255,0.3);font-weight:700;font-size:0.75rem;cursor:pointer;background:transparent;color:rgba(255,255,255,0.7);white-space:nowrap;">⏱️ 5 dk</button>
+  </div>
+  <div id="userScoresList" style="width:100%;max-width:400px;overflow-y:auto;flex:1;"></div>
+</div>
+
+<div id="badgeDetailModal" style="display:none;position:fixed;inset:0;background:rgba(58,43,34,0.75);z-index:10005;align-items:center;justify-content:center;">
+  <div style="background:#FFF8F5;border-radius:22px;padding:24px;width:78%;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,0.3);text-align:center;">
+    <div id="bdEmoji" style="font-size:44px;margin-bottom:8px;">🏅</div>
+    <div id="bdName" style="font-family:'Baloo 2',sans-serif;font-size:17px;font-weight:800;color:#4E342E;margin-bottom:8px;"></div>
+    <div id="bdDesc" style="font-size:13px;color:#7a4a30;margin-bottom:14px;line-height:1.4;"></div>
+    <div id="bdStatus" style="font-size:13px;font-weight:700;margin-bottom:16px;"></div>
+    <button onclick="closeBadgeDetailModal()" style="width:100%;background:#FF7043;color:#fff;border:none;border-radius:12px;padding:11px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:14px;cursor:pointer;">
+      <span id="bdOkLabel">Tamam</span>
+    </button>
+  </div>
+</div>
+
 <div id="publicProfileModal" style="display:none;position:fixed;inset:0;background:rgba(58,43,34,0.7);z-index:10003;align-items:center;justify-content:center;">
   <div style="background:#FFF8F5;border-radius:24px;padding:24px;width:88%;max-width:340px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:0 8px 32px rgba(0,0,0,0.25);">
     <div style="display:flex;justify-content:flex-end;">
       <button onclick="closePublicProfileModal()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#7a4a30;">✕</button>
     </div>
-    <div style="text-align:center;margin-bottom:14px;">
+    <div style="text-align:center;margin-bottom:10px;">
       <div style="width:76px;height:76px;border-radius:50%;background:#fff;border:3px solid #FFB74D;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
         <img id="ppAvatarImg" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
         <span id="ppAvatarFallback" style="font-size:38px;">👤</span>
       </div>
-      <div id="ppUsername" style="font-family:'Baloo 2',sans-serif;font-size:19px;font-weight:800;color:#4E342E;"></div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
+        <div id="ppUsername" style="font-family:'Baloo 2',sans-serif;font-size:19px;font-weight:800;color:#4E342E;"></div>
+        <button id="editUsernameBtn" style="display:none;background:#FFE9C7;border:none;border-radius:8px;width:24px;height:24px;cursor:pointer;font-size:12px;color:#7a4a30;align-items:center;justify-content:center;flex-shrink:0;">✏️</button>
+      </div>
+      <div id="loginProfileEmail" style="font-size:11px;color:#8D6E63;margin-top:2px;word-break:break-all;"></div>
+    </div>
+
+    <div id="ppSelfTopSection" style="display:none;margin-bottom:12px;">
+      <div style="background:#fff;border-radius:12px;padding:8px;border:2px solid #e0c9a6;display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:#f5ede0;border:2px solid #e0c9a6;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+          <img id="friendPhotoImg" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
+          <span id="friendPhotoFallback" style="font-size:17px;">👤</span>
+        </div>
+        <button id="changeFriendPhotoBtn" style="flex:1;background:#FFE9C7;border:none;border-radius:8px;padding:8px 6px;cursor:pointer;font-size:11px;color:#7a4a30;font-weight:700;">📷 <span id="changeFriendPhotoLabel">Fotoğraf Değiştir</span></button>
+      </div>
+      <p id="friendPhotoNote" style="font-size:0.6rem;color:#8D6E63;margin:6px 0 0;line-height:1.3;text-align:center;">ℹ️ Bu fotoğraf sadece arkadaşların gördüğü ekranlarda görünür, herkese açık skor tablosunda görünmez.</p>
+      <input type="file" id="friendPhotoInput" accept="image/*" style="display:none;">
+      <div id="usernameEditWrap" style="display:none;margin-top:10px;background:#fff;border-radius:12px;padding:10px;border:2px solid #e0c9a6;">
+        <input id="usernameInput" type="text" maxlength="20"
+          style="width:100%;box-sizing:border-box;padding:9px 11px;border-radius:9px;border:2px solid #e0c9a6;font-family:'Nunito',sans-serif;font-size:13px;color:#4E342E;background:#fff8f0;outline:none;margin-bottom:6px;">
+        <p id="usernameMsg" style="min-height:14px;font-size:0.7rem;color:#e8425b;margin:2px 0 6px;"></p>
+        <button id="saveUsernameBtn" style="width:100%;background:#4CAF50;color:#fff;border:none;border-radius:9px;padding:8px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:12px;cursor:pointer;">
+          <span id="saveUsernameLabel">Kaydet</span>
+        </button>
+      </div>
     </div>
 
     <div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:14px;border:2px solid #e0c9a6;">
@@ -772,7 +971,10 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
     </div>
 
     <div id="ppBadgesTitle" style="font-size:11px;color:#8D6E63;font-weight:700;margin-bottom:8px;letter-spacing:0.3px;">ROZETLER</div>
-    <div id="ppBadgesGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;"></div>
+    <div style="position:relative;margin-bottom:16px;overflow:hidden;border-radius:12px;">
+      <div id="ppBadgesGrid" style="display:flex;overflow-x:auto;gap:6px;padding:2px 46px 6px 2px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;"></div>
+      <button id="ppBadgesScrollBtn" style="position:absolute;top:0;right:0;bottom:0;width:38px;border:none;border-radius:0 10px 10px 0;background:#FFB74D;color:#fff;font-size:18px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:-8px 0 12px -4px #FFF8F5;">›</button>
+    </div>
 
     <div id="ppStatsTitle" style="font-size:11px;color:#8D6E63;font-weight:700;margin-bottom:8px;letter-spacing:0.3px;">İSTATİSTİKLER</div>
     <div style="background:#fff;border-radius:14px;padding:4px 14px;border:2px solid #e0c9a6;">
@@ -784,45 +986,21 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
         <span id="ppStatGamesLabel" style="font-size:13px;color:#8D6E63;">Toplam Oyun</span>
         <span id="ppStatGamesValue" style="font-size:13px;font-weight:800;color:#3a2b22;"></span>
       </div>
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f0e2cc;">
+        <span id="ppStatBadgesLabel" style="font-size:13px;color:#8D6E63;">Kazanılan Rozet</span>
+        <span id="ppStatBadgesValue" style="font-size:13px;font-weight:800;color:#3a2b22;"></span>
+      </div>
       <div style="display:flex;justify-content:space-between;padding:9px 0;">
         <span id="ppStatSinceLabel" style="font-size:13px;color:#8D6E63;">Katılma Tarihi</span>
         <span id="ppStatSinceValue" style="font-size:13px;font-weight:800;color:#3a2b22;"></span>
       </div>
     </div>
 
-    <div id="ppSelfSection" style="display:none;margin-top:16px;">
-      <div id="loginProfileEmail" style="font-size:13px;color:#8D6E63;font-weight:700;margin-bottom:14px;word-break:break-all;text-align:center;"></div>
+    <button id="ppOpenScoresBtn" style="width:100%;background:#7a4a30;color:#fff;border:none;border-radius:14px;padding:13px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:16px;">
+      🏆 <span id="ppOpenScoresLabel">Skorlarını Gör</span>
+    </button>
 
-      <div style="background:#fff;border-radius:14px;padding:12px;margin-bottom:14px;border:2px solid #e0c9a6;">
-        <div id="friendPhotoLabel" style="font-size:11px;color:#8D6E63;font-weight:700;margin-bottom:8px;letter-spacing:0.3px;">ARKADAŞLARIN GÖRDÜĞÜ FOTOĞRAF</div>
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:48px;height:48px;border-radius:50%;background:#f5ede0;border:2px solid #e0c9a6;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;">
-            <img id="friendPhotoImg" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
-            <span id="friendPhotoFallback" style="font-size:22px;">👤</span>
-          </div>
-          <button id="changeFriendPhotoBtn" style="flex:1;background:#FFE9C7;border:none;border-radius:10px;padding:9px;cursor:pointer;font-size:12px;color:#7a4a30;font-weight:700;">📷 <span id="changeFriendPhotoLabel">Fotoğraf Değiştir</span></button>
-        </div>
-        <p id="friendPhotoNote" style="font-size:0.68rem;color:#8D6E63;margin:8px 0 0;line-height:1.4;text-align:left;">ℹ️ Bu fotoğraf sadece arkadaşların gördüğü ekranlarda görünür, herkese açık skor tablosunda görünmez.</p>
-      </div>
-      <input type="file" id="friendPhotoInput" accept="image/*" style="display:none;">
-
-      <div id="usernameSection" style="background:#fff;border-radius:14px;padding:14px;margin-bottom:14px;border:2px solid #e0c9a6;">
-        <div id="usernameLabel" style="font-size:11px;color:#8D6E63;font-weight:700;margin-bottom:6px;letter-spacing:0.3px;">KULLANICI ADI</div>
-        <div id="usernameDisplayWrap" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <span id="usernameText" style="font-weight:800;color:#3a2b22;font-size:15px;">—</span>
-          <button id="editUsernameBtn" style="background:#FFE9C7;border:none;border-radius:10px;padding:6px 10px;cursor:pointer;font-size:13px;color:#7a4a30;font-weight:700;">✏️ <span id="editUsernameLabel">Değiştir</span></button>
-        </div>
-        <div id="usernameEditWrap" style="display:none;margin-top:10px;">
-          <input id="usernameInput" type="text" maxlength="20"
-            style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:2px solid #e0c9a6;font-family:'Nunito',sans-serif;font-size:14px;color:#4E342E;background:#fff8f0;outline:none;margin-bottom:6px;">
-          <p id="usernameChangeNote" style="font-size:0.68rem;color:#8D6E63;margin:0 0 8px;line-height:1.4;">ℹ️ Önceki skorlardaki ismin değişmez, sadece bundan sonrakiler yeni ismi kullanır.</p>
-          <p id="usernameMsg" style="min-height:16px;font-size:0.75rem;color:#e8425b;margin:2px 0 8px;"></p>
-          <button id="saveUsernameBtn" style="width:100%;background:#4CAF50;color:#fff;border:none;border-radius:10px;padding:9px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">
-            <span id="saveUsernameLabel">Kaydet</span>
-          </button>
-        </div>
-      </div>
-
+    <div id="ppSelfSection" style="display:none;">
       <button id="logoutBtn" style="width:100%;background:#e8425b;color:#fff;border:none;border-radius:14px;padding:13px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:14px;cursor:pointer;">
         <span id="logoutLabel">Çıkış Yap</span>
       </button>
@@ -831,7 +1009,7 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
 </div>
 
 <input type="file" id="fileInput" accept="image/*">
-<input type="file" id="fileInputCamera" accept="image/*" capture="environment">
+<input type="file" id="fileInputCamera" accept="image/*" capture="environment" style="display:none;">
 <input type="file" id="friendPhotoInputCamera" accept="image/*" capture="environment" style="display:none;">
 
 <!-- Kamera / Galeri seçim penceresi -->
@@ -1335,15 +1513,58 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       kacTop: 'Kaç top yağsın?', topSub: 'Toplar otomatik düşer, sen birleştirirsin',
       iptal: 'İptal', tamam: 'Tamam',
       gorselOzellestir: 'Görselleri Özelleştir', hazirPaketler: 'Hazır Paketler', farkliTema: '5 farklı tema', kendiFotograflarin: 'Kendi Fotoğrafların', galerinden: 'Galerinden seç', paketKaydet: 'Paketi Kaydet', paketAdi: 'Paket adı...', yeniPaketOlustur: 'Yeni Paket Oluştur', paketIceAktar: 'Paket İçe Aktar',
-      jokerler: 'Jokerler', kucukBomba: 'Küçük Bomba', buyukBomba: 'Büyük Bomba', karistir: 'Karıştır',
+      jokerler: 'Jokerler', kucukBomba: 'Yükselt', buyukBomba: 'İğne', karistir: 'Karıştır',
+      kucukBombaDesc: 'Seçtiğin topu bir üst seviyeye çıkarır', kucukBombaUyari: '⬆️ Bu top zaten en yüksek seviyede, yükseltilemez!', buyukBombaDesc: 'Seçtiğin her boy topu patlatır', karistirDesc: 'Tüm topları havaya savurup karıştırır',
       kalanHak: 'hak', kullanildi: 'kullanıldı',
       jokerYok: 'Joker yok · Ayrı skor tablosu',
       sesEfektleri: '🔊 Ses Efektleri', sesSub: 'Top düşme ve birleşme sesleri',
+      muzik: '🎵 Müzik', muzikSub: 'Arka plan müziği',
+      siran: 'Sıran', enIyiKisa: 'En iyi', sen: 'sen',
+      gorevlerBtn: 'Görevler ve Ödüller', gorevlerBaslik: '🎯 Günlük Görevler', rozetler: '🏅 Rozetler',
+      gorevYenilenir: 'Görevler her gün yenilenir', gunSeri: 'gün', kapat: 'Kapat', rozetYeni: 'Yeni rozet',
+      bankBaslik: 'Biriken ödüllerin',
+      gorevBirlesme: '{n} birleşme yap', gorevSkor: 'Tek oyunda {n} puana ulaş', gorevOyun: '{n} oyun tamamla',
+      gorevKombo: "Tek oyunda {n}'li kombo yap", gorevJoker: '{n} joker kullan', gorevSeviye: 'Seviye {n} top oluştur',
+      gorevTamam: '🎯 Görev bitti: "{g}" — Ödül: {o}',
+      odulEtiket: 'Ödül',
+      odulXp150: '+150 XP (anında)', odulXp200: '+200 XP (anında)', odulXp300: '+300 XP (anında)',
+      odulXp350: '+350 XP (anında)', odulXp500: '+500 XP (anında)', odulXp600: '+600 XP (anında)',
+      zorlukKolay: 'KOLAY', zorlukOrta: 'ORTA', zorlukZor: 'ZOR',
+      odulBankSmall: '+1 Yükselt (biriktir, istediğin an kullan)', odulBankBig: '+1 İğne (biriktir, istediğin an kullan)',
+      odulBankShuffle: '+1 Karıştır hakkı (biriktir, istediğin an kullan)',
+      bankKullanildi: '🎁 Kazandığın jokeri kullandın!',
+      kavanozBuyudu: '🎉 Kavanozun büyüdü! Daha fazla yer var!',
+      seviyeAtladi: '🎉 Seviye {n}! Kavanozun büyüdü!', seviyeAtladiJoker: '🎉 Seviye {n}! +1 {j}', seviyeYazisi: 'SEVİYE',
+      zincirMesaji: '🔗 {n}\'li Zincir! +{p} puan',
+      paylasSkor: '📤 Skoru Paylaş', paylasBasarisiz: '❌ Paylaşım başarısız oldu', paylasIndirildi: '✅ Görsel indirildi, paylaşabilirsin!',
+      mukemmelGunAdi: 'Mükemmel Gün', mukemmelGunAciklama: 'Bir günde 3 görevi de tamamladın',
+      gunlukDeneme: 'Günün Denemesi', gunlukDenemeSub: 'Herkese aynı toplar, günde tek hak',
+      buyuyenKavanoz: 'Büyüyen Kavanoz', buyuyenKavanozSub: 'Dar başlar, puan yaptıkça genişler', modBuyuyen: '🫙 Büyüyen',
+      gunlukOynandi: '✓ Bugün oynadın — yarın yenisi!', gunlukTekHak: '🗓️ Günde tek hak! Yarın tekrar dene',
+      gunlukBasladi: '🗓️ Günün Denemesi! Tek hakkın var, bol şans!', gunlukGirisGerekli: '🔒 Deneme için önce giriş yapmalısın', denemeBittiBaslik: '🗓️ Deneme bitti — skorun kaydedildi!',
+      denemeTab: '🗓️ Deneme', denemeBugun: 'Bugünkü Deneme', denemeTum: 'Tüm Zamanlar',
+      enIyiKombo: 'En iyi kombo', birlesmeLbl: 'Birleşme', rekorLbl: 'Rekor',
+      yeniRekor: '🎉 YENİ REKOR!', rekoraKalan: '{n} kaldı',
+      reklamHazirDegil: '📺 Reklam şu an hazır değil', reklamOdul: '🎁 +1 joker eklendi!',
+      reklamKullanildi: '📺 Bu oyunda bu jokeri zaten kazandın',
+      tutSoruBaslik: 'Eğitim 🎓', tutSoru: 'Nasıl oynanacağını 1 dakikada oynayarak öğrenmek ister misin?',
+      tutNot: 'İstediğin zaman Ayarlar → 📖 Nasıl Oynanır? bölümünden tekrar açabilirsin.',
+      tutEvet: 'Evet, öğret!', tutHayir: 'Hayır',
+      tutS1: '👆 Dokun, kaydır ve ok işaretli bölgeye bırak — ilk topunu düşür!',
+      tutS2: '🍒 Bir tane daha, aynı yere! Aynı iki top çarpışınca birleşip büyür.',
+      tutS3: '💥 Süper, birleşti! Şimdi 🎮 Joker butonuna bas ve 📌 İğne\'yi seç.',
+      tutS4: '🎯 Şimdi istediğin bir topa dokun ve patlat!',
+      tutHedef: '🎯 Ok işaretli bölgeye bırakmalısın!', tutOnceJoker: '🎮 Önce parlayan Joker butonuna bas!',
+      tutFinBaslik: 'Hazırsın! 🎉',
+      tutFin: 'Son kural: toplar üstteki çizgiyi 3 saniye aşarsa oyun biter. Hepsi bu kadar — iyi eğlenceler!',
+      tutKapat: 'Tamam',
+      nasilOynanir: '📖 Nasıl Oynanır?', nasilOynanirSub: 'Etkileşimli eğitimi başlat',
       dil: '🌐 Dil', dilSub: 'Türkçe / English',
       skorKaydet: '💾 Skoru Kaydet', isminNe: 'İsmin ne?',
       bugunSampiyonu: 'Bugünün şampiyonu', puan: 'puan',
       anaMenyeDon: 'Ana menüye dön?', oyunKaydedilecek: 'Oyun kaydedilecek, devam edebilirsin.',
       yenidenBaslat: 'Yeniden başlat?', eminMisin: 'Mevcut oyun silinecek.',
+      devamEdenOyunBaslik: 'Devam eden bir oyunun var', devamEdenOyunAlt: 'Yeni oyuna başlarsan mevcut ilerlemen silinecek. Emin misin?',
       evet: 'Evet',
       hakkindaBaslik: 'Ball Basket', hakkindaVer: 'v1.0',
       hakkindaAcik: 'Aynı topları birleştir, daha büyük toplar yap, rekoru kır!\n\nKendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨',
@@ -1353,7 +1574,7 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       kacDakika: 'Kaç dakika?',
       meyveBaslik: 'Meyve Resimlerini Değiştir',
       tumunuSifirla: 'Tümünü Sıfırla',
-      tumZamanlar: '🌟 Tüm Zamanlar',
+      tumZamanlar: 'Tüm Zamanlar', buHafta: 'Bu Hafta',
       bugun: '☀️ Bugün',
       skorTablosuBaslik: '🏆 Skor Tablosu',
       modKlasik: '🎯 Klasik',
@@ -1373,7 +1594,7 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       kullaniciAdiUzunluk: '3-20 karakter olmalı', gecersizKarakter: 'Sadece harf, rakam, boşluk kullan',
       kullaniciAdiUygunsuz: 'Bu kullanıcı adı kullanılamaz', kullaniciAdiAlinmis: 'Bu kullanıcı adı alınmış, başka dene',
       baglantiHatasiKisa: 'Bağlantı hatası, tekrar dene', kullaniciAdiKaydedildi: '✅ Kaydedildi!',
-      kullaniciAdiDegisimNotu: 'ℹ️ Önceki skorlardaki ismin değişmez, sadece bundan sonrakiler yeni ismi kullanır.',
+      genelFotoNotu: 'ℹ️ Bu fotoğraf herkese açık skor tablosunda görünür, Google hesabından otomatik gelir, buradan değiştirilemez.',
       arkadaslarinFotoBaslik: 'ARKADAŞLARIN GÖRDÜĞÜ FOTOĞRAF', fotografDegistir: 'Fotoğraf Değiştir',
       arkadasFotoNotu: 'ℹ️ Bu fotoğraf sadece arkadaşların gördüğü ekranlarda görünür, herkese açık skor tablosunda görünmez.',
       fotoNereden: 'Fotoğraf Nereden?', fotoCek: 'Fotoğraf Çek', galeridenSec: 'Galeriden Seç',
@@ -1384,6 +1605,18 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       zatenIstekGonderildi: 'Bu kişiye zaten istek gönderdin',
       seviyemVeRozetlerim: 'Seviyem ve Rozetlerim', seviye: 'Seviye', rozetlerBaslik: 'ROZETLER', istatistiklerBaslik: 'İSTATİSTİKLER',
       enYuksekSkorLabel: 'En Yüksek Skor', toplamOyunLabel: 'Toplam Oyun', katilmaTarihiLabel: 'Katılma Tarihi',
+      toplamXpLabel: 'Toplam XP', arkadasSayisiLabel: 'Arkadaş Sayısı', kazanilanRozetLabel: 'Kazanılan Rozet',
+      enIyiSkorlariBaslik: 'EN İYİ SKORLARI', klasikModEtiketi: 'Klasik Mod', birDkEtiketi: '1 Dakika',
+      ucDkEtiketi: '3 Dakika', besDkEtiketi: '5 Dakika', henuzSkorYok: 'Henüz kaydedilmiş skor yok',
+      skorlariniGorLabel: 'Skorlarını Gör', klasikEtiketiKisa: 'Klasik',
+      kralAdi: 'Kral', kralAciklama: 'Bir oyunda 50.000+ puan yaptın',
+      kombo5Adi: "5'li Kombo", kombo5Aciklama: "Tek oyunda 5'li kombo yaptın",
+      kombo8Adi: "8'li Kombo", kombo8Aciklama: "Tek oyunda 8'li kombo yaptın",
+      karpuzAdi: 'En Büyük Top', karpuzAciklama: 'En büyük topu oluşturdun',
+      jokersizAdi: 'Saf Yetenek', jokersizAciklama: 'Hiç joker kullanmadan 5.000 puan yaptın',
+      birlesme1kAdi: 'Birleştirme Delisi', birlesme1kAciklama: 'Toplam 1.000 birleşme yaptın',
+      seri7Adi: 'Sadık Oyuncu', seri7Aciklama: '7 gün üst üste oynadın',
+      seri30Adi: 'Demirbaş', seri30Aciklama: '30 gün üst üste oynadın',
       ilkAdimAdi: 'İlk Adım', ilkAdimAciklama: 'İlk skorunu kaydettin',
       yukselisAdi: 'Yükseliş', yukselisAciklama: 'Bir oyunda 1000+ puan yaptın',
       ustaAdi: 'Usta', ustaAciklama: 'Bir oyunda 5000+ puan yaptın',
@@ -1391,6 +1624,14 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       bagimliAdi: 'Bağımlı', bagimliAciklama: '10 oyun oynadın',
       veteranAdi: 'Veteran', veteranAciklama: '50 oyun oynadın',
       sosyalAdi: 'Sosyal', sosyalAciklama: 'İlk arkadaşını ekledin',
+      superstarAdi: 'Süperstar', superstarAciklama: 'Bir oyunda 20000+ puan yaptın',
+      demirbilekAdi: 'Demir Bilek', demirbilekAciklama: '100 oyun oynadın',
+      populerAdi: 'Popüler', populerAciklama: '5 arkadaş edindin',
+      kelebekAdi: 'Sosyal Kelebek', kelebekAciklama: '10 arkadaş edindin',
+      seviye10Adi: 'Seviye 10', seviye10Aciklama: 'Seviye 10\'a ulaştın',
+      seviye20Adi: 'Seviye 20', seviye20Aciklama: 'Seviye 20\'ye ulaştın',
+      biraylikAdi: 'Bir Aylık Üye', biraylikAciklama: 'En az 1 aydır Ball Basket ailesindesin',
+      rozetKazanildi: 'Bu rozeti kazandın!', rozetKilitli: 'Henüz kazanılmadı', tumRozetler: '🏅 Tüm Rozetler',
       kendiniEkleyemezsin: 'Kendini ekleyemezsin', arkadasEklendi: '✅ Eklendi!',
       girisGerekliArkadas: 'Bu özellik için giriş yapmalısın', hicArkadasYok: 'Henüz arkadaş eklemedin',
       kabulEt: 'Kabul Et', istekGonderildi: 'İstek gönderildi', istekGonderildiMsg: '✅ İstek gönderildi!',
@@ -1408,15 +1649,58 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       kacTop: 'How many balls?', topSub: 'Balls drop automatically, you merge them',
       iptal: 'Cancel', tamam: 'OK',
       gorselOzellestir: 'Customize Visuals', hazirPaketler: 'Ready Packs', farkliTema: '5 different themes', kendiFotograflarin: 'Your Photos', galerinden: 'Choose from gallery', paketKaydet: 'Save Pack', paketAdi: 'Pack name...', yeniPaketOlustur: 'Create New Pack', paketIceAktar: 'Import Pack',
-      jokerler: 'Jokers', kucukBomba: 'Small Bomb', buyukBomba: 'Big Bomb', karistir: 'Shuffle',
+      jokerler: 'Jokers', kucukBomba: 'Upgrade', buyukBomba: 'Needle', karistir: 'Shuffle',
+      kucukBombaDesc: 'Upgrades the ball you tap to the next level', kucukBombaUyari: '⬆️ This ball is already max level, can\'t upgrade it!', buyukBombaDesc: 'Pops any ball you tap', karistirDesc: 'Tosses and shuffles all the balls',
       kalanHak: 'left', kullanildi: 'used',
       jokerYok: 'No jokers · Separate leaderboard',
       sesEfektleri: '🔊 Sound Effects', sesSub: 'Drop and merge sounds',
+      muzik: '🎵 Music', muzikSub: 'Background music',
+      siran: 'Your rank', enIyiKisa: 'Best', sen: 'you',
+      gorevlerBtn: 'Quests & Rewards', gorevlerBaslik: '🎯 Daily Quests', rozetler: '🏅 Badges',
+      gorevYenilenir: 'Quests refresh every day', gunSeri: 'days', kapat: 'Close', rozetYeni: 'New badge',
+      bankBaslik: 'Your saved rewards',
+      gorevBirlesme: 'Make {n} merges', gorevSkor: 'Reach {n} points in one game', gorevOyun: 'Finish {n} games',
+      gorevKombo: 'Make a x{n} combo in one game', gorevJoker: 'Use {n} jokers', gorevSeviye: 'Create a level {n} ball',
+      gorevTamam: '🎯 Quest done: "{g}" — Reward: {o}',
+      odulEtiket: 'Reward',
+      odulXp150: '+150 XP (instant)', odulXp200: '+200 XP (instant)', odulXp300: '+300 XP (instant)',
+      odulXp350: '+350 XP (instant)', odulXp500: '+500 XP (instant)', odulXp600: '+600 XP (instant)',
+      zorlukKolay: 'EASY', zorlukOrta: 'MEDIUM', zorlukZor: 'HARD',
+      odulBankSmall: '+1 Upgrade (save it, use anytime)', odulBankBig: '+1 Needle (save it, use anytime)',
+      odulBankShuffle: '+1 Shuffle (save it, use anytime)',
+      bankKullanildi: '🎁 Used your earned joker!',
+      kavanozBuyudu: '🎉 Your jar grew! More room now!',
+      seviyeAtladi: '🎉 Level {n}! Your jar grew!', seviyeAtladiJoker: '🎉 Level {n}! +1 {j}', seviyeYazisi: 'LEVEL',
+      zincirMesaji: '🔗 {n}x Chain! +{p} points',
+      paylasSkor: '📤 Share Score', paylasBasarisiz: '❌ Sharing failed', paylasIndirildi: '✅ Image saved, you can share it now!',
+      mukemmelGunAdi: 'Perfect Day', mukemmelGunAciklama: 'Completed all 3 quests in one day',
+      gunlukDeneme: 'Daily Challenge', gunlukDenemeSub: 'Same balls for everyone, one try a day',
+      buyuyenKavanoz: 'Growing Jar', buyuyenKavanozSub: 'Starts narrow, widens as you score', modBuyuyen: '🫙 Growing',
+      gunlukOynandi: '✓ Played today — new one tomorrow!', gunlukTekHak: '🗓️ One try per day! Come back tomorrow',
+      gunlukBasladi: '🗓️ Daily Challenge! One try — good luck!', gunlukGirisGerekli: '🔒 Sign in to play the Challenge', denemeBittiBaslik: '🗓️ Challenge over — score saved!',
+      denemeTab: '🗓️ Challenge', denemeBugun: "Today's Challenge", denemeTum: 'All Time',
+      enIyiKombo: 'Best combo', birlesmeLbl: 'Merges', rekorLbl: 'Best',
+      yeniRekor: '🎉 NEW RECORD!', rekoraKalan: '{n} to go',
+      reklamHazirDegil: '📺 Ad not ready right now', reklamOdul: '🎁 +1 joker added!',
+      reklamKullanildi: '📺 Already earned this joker this game',
+      tutSoruBaslik: 'Tutorial 🎓', tutSoru: 'Want to learn how to play in 1 minute — by playing?',
+      tutNot: 'You can start it anytime from Settings → 📖 How to Play.',
+      tutEvet: 'Yes, teach me!', tutHayir: 'No',
+      tutS1: '👆 Touch, slide and release over the marked zone — drop your first ball!',
+      tutS2: '🍒 One more, same spot! When two identical balls collide, they merge and grow.',
+      tutS3: '💥 Nice, they merged! Now tap the 🎮 Joker button and pick the 📌 Needle.',
+      tutS4: '🎯 Now tap any ball to pop it!',
+      tutHedef: '🎯 Drop it on the marked zone!', tutOnceJoker: '🎮 Tap the glowing Joker button first!',
+      tutFinBaslik: 'You\'re ready! 🎉',
+      tutFin: 'Last rule: if balls stay above the top line for 3 seconds, the game ends. That\'s all — have fun!',
+      tutKapat: 'OK',
+      nasilOynanir: '📖 How to Play', nasilOynanirSub: 'Start the interactive tutorial',
       dil: '🌐 Language', dilSub: 'Türkçe / English',
       skorKaydet: '💾 Save Score', isminNe: 'Your name?',
       bugunSampiyonu: "Today's champion", puan: 'pts',
       anaMenyeDon: 'Go to main menu?', oyunKaydedilecek: 'Game will be saved, you can continue.',
       yenidenBaslat: 'Restart?', eminMisin: 'Current game will be deleted.',
+      devamEdenOyunBaslik: 'You have a game in progress', devamEdenOyunAlt: 'Starting a new game will erase your current progress. Are you sure?',
       evet: 'Yes',
       hakkindaBaslik: 'Ball Basket', hakkindaVer: 'v1.0',
       hakkindaAcik: 'Merge matching balls to make bigger ones and beat the high score!\n\nUpload your own photos to personalize the balls. 🎨',
@@ -1426,7 +1710,7 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       kacDakika: 'How many minutes?',
       meyveBaslik: 'Change Fruit Images',
       tumunuSifirla: 'Reset All',
-      tumZamanlar: '🌟 All Time',
+      tumZamanlar: 'All Time', buHafta: 'This Week',
       bugun: '☀️ Today',
       skorTablosuBaslik: '🏆 Leaderboard',
       modKlasik: '🎯 Classic',
@@ -1446,7 +1730,7 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       kullaniciAdiUzunluk: 'Must be 3-20 characters', gecersizKarakter: 'Only letters, numbers, spaces',
       kullaniciAdiUygunsuz: 'This username is not allowed', kullaniciAdiAlinmis: 'Username taken, try another',
       baglantiHatasiKisa: 'Connection error, try again', kullaniciAdiKaydedildi: '✅ Saved!',
-      kullaniciAdiDegisimNotu: 'ℹ️ Your name on past scores stays the same, only new scores use the updated name.',
+      genelFotoNotu: "ℹ️ This photo shows on the public leaderboard, comes automatically from your Google account, and can't be changed here.",
       arkadaslarinFotoBaslik: 'PHOTO YOUR FRIENDS SEE', fotografDegistir: 'Change Photo',
       arkadasFotoNotu: "ℹ️ This photo is only visible to your friends, not on the public leaderboard.",
       fotoNereden: 'Photo Source?', fotoCek: 'Take Photo', galeridenSec: 'Choose from Gallery',
@@ -1457,6 +1741,18 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       zatenIstekGonderildi: 'You already sent this person a request',
       seviyemVeRozetlerim: 'My Level & Badges', seviye: 'Level', rozetlerBaslik: 'BADGES', istatistiklerBaslik: 'STATISTICS',
       enYuksekSkorLabel: 'Highest Score', toplamOyunLabel: 'Total Games', katilmaTarihiLabel: 'Member Since',
+      toplamXpLabel: 'Total XP', arkadasSayisiLabel: 'Friend Count', kazanilanRozetLabel: 'Badges Earned',
+      enIyiSkorlariBaslik: 'TOP SCORES', klasikModEtiketi: 'Classic Mode', birDkEtiketi: '1 Minute',
+      ucDkEtiketi: '3 Minutes', besDkEtiketi: '5 Minutes', henuzSkorYok: 'No saved scores yet',
+      skorlariniGorLabel: 'View Scores', klasikEtiketiKisa: 'Classic',
+      kralAdi: 'King', kralAciklama: 'Scored 50,000+ in one game',
+      kombo5Adi: 'Combo x5', kombo5Aciklama: 'Made a x5 combo in one game',
+      kombo8Adi: 'Combo x8', kombo8Aciklama: 'Made a x8 combo in one game',
+      karpuzAdi: 'Biggest Ball', karpuzAciklama: 'Created the biggest ball',
+      jokersizAdi: 'Pure Skill', jokersizAciklama: 'Scored 5,000 without using any joker',
+      birlesme1kAdi: 'Merge Maniac', birlesme1kAciklama: 'Made 1,000 total merges',
+      seri7Adi: 'Loyal Player', seri7Aciklama: 'Played 7 days in a row',
+      seri30Adi: 'The Regular', seri30Aciklama: 'Played 30 days in a row',
       ilkAdimAdi: 'First Step', ilkAdimAciklama: 'Saved your first score',
       yukselisAdi: 'Rising Star', yukselisAciklama: 'Scored 1000+ in a game',
       ustaAdi: 'Master', ustaAciklama: 'Scored 5000+ in a game',
@@ -1464,6 +1760,14 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       bagimliAdi: 'Hooked', bagimliAciklama: 'Played 10 games',
       veteranAdi: 'Veteran', veteranAciklama: 'Played 50 games',
       sosyalAdi: 'Social', sosyalAciklama: 'Added your first friend',
+      superstarAdi: 'Superstar', superstarAciklama: 'Scored 20000+ in a game',
+      demirbilekAdi: 'Iron Wrist', demirbilekAciklama: 'Played 100 games',
+      populerAdi: 'Popular', populerAciklama: 'Got 5 friends',
+      kelebekAdi: 'Social Butterfly', kelebekAciklama: 'Got 10 friends',
+      seviye10Adi: 'Level 10', seviye10Aciklama: 'Reached level 10',
+      seviye20Adi: 'Level 20', seviye20Aciklama: 'Reached level 20',
+      biraylikAdi: 'One Month Member', biraylikAciklama: "You've been part of Ball Basket for a month",
+      rozetKazanildi: 'You earned this badge!', rozetKilitli: 'Not earned yet', tumRozetler: '🏅 All Badges',
       kendiniEkleyemezsin: "You can't add yourself", arkadasEklendi: '✅ Added!',
       girisGerekliArkadas: 'You need to log in for this feature', hicArkadasYok: "You haven't added any friends yet",
       kabulEt: 'Accept', istekGonderildi: 'Request sent', istekGonderildiMsg: '✅ Request sent!',
@@ -1499,6 +1803,9 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
     setText('menuLabel', L.menu);
     setText('jokerPanelTitle', L.jokerler);
     setText('kucukBombaLabel', L.kucukBomba);
+    setText('kucukBombaDesc', L.kucukBombaDesc);
+    setText('buyukBombaDesc', L.buyukBombaDesc);
+    setText('karistirDesc', L.karistirDesc);
     setText('buyukBombaLabel', L.buyukBomba);
     setText('karistirLabel', L.karistir);
     setText('topAtKapat', L.iptal);
@@ -1523,6 +1830,28 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
     setText('jokerYokLabel', L.jokerYok);
     setText('sesEfektleriLabel', L.sesEfektleri);
     setText('sesSubLabel', L.sesSub);
+    setText('muzikLabel', L.muzik);
+    setText('muzikSubLabel', L.muzikSub);
+    setText('nasilOynanirLabel', L.nasilOynanir);
+    setText('menuGorevlerLabel', L.gorevlerBtn);
+    setText('menuDailyTitle', L.gunlukDeneme);
+    setText('menuGrowingTitle', L.buyuyenKavanoz);
+    setText('menuGrowingSub', L.buyuyenKavanozSub);
+    setText('modeGrowingLabel', L.modBuyuyen);
+    setText('growingAllTimeLbl', L.tumZamanlar);
+    setText('growingWeekLbl', L.buHafta);
+    setText('growingTodayLbl', L.bugun);
+    setText('modeDailyChLabel', L.denemeTab);
+    setText('dailyChTodayLbl', L.denemeBugun);
+    setText('shareScoreLabel', L.paylasSkor);
+    setText('goStatComboLbl', L.enIyiKombo);
+    setText('goStatMergeLbl', L.birlesmeLbl);
+    setText('goStatRecordLbl', L.rekorLbl);
+    updateDailyBtnUI();
+    setText('gorevlerBaslik', L.gorevlerBaslik);
+    setText('questResetNote', L.gorevYenilenir);
+    setText('questsKapatBtn', L.kapat);
+    setText('nasilOynanirSubLabel', L.nasilOynanirSub);
     document.getElementById('loginEmailInput').placeholder = L.eposta;
     document.getElementById('loginPasswordInput').placeholder = L.sifre;
     setText('logoutLabel', L.cikisYap);
@@ -1531,10 +1860,10 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
     setText('editUsernameLabel', L.degistirBtn);
     setText('saveUsernameLabel', L.kaydetBtn);
     setText('usernameLabel', L.kullaniciAdiBaslik);
-    setText('usernameChangeNote', L.kullaniciAdiDegisimNotu);
     setText('friendPhotoLabel', L.arkadaslarinFotoBaslik);
     setText('changeFriendPhotoLabel', L.fotografDegistir);
     setText('friendPhotoNote', L.arkadasFotoNotu);
+    setText('genelFotoNotu', L.genelFotoNotu);
     setText('photoSourceTitle', L.fotoNereden);
     setText('photoSourceCameraLabel', L.fotoCek);
     setText('photoSourceGalleryLabel', L.galeridenSec);
@@ -1544,6 +1873,14 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
     setText('ppStatHighLabel', L.enYuksekSkorLabel);
     setText('ppStatGamesLabel', L.toplamOyunLabel);
     setText('ppStatSinceLabel', L.katilmaTarihiLabel);
+    setText('ppStatXpLabel', L.toplamXpLabel);
+    setText('ppStatFriendsLabel', L.arkadasSayisiLabel);
+    setText('ppStatBadgesLabel', L.kazanilanRozetLabel);
+    setText('ppTopScoresTitle', L.enIyiSkorlariBaslik);
+    setText('ppOpenScoresLabel', L.skorlariniGorLabel);
+    setText('userScoreModeClassicLabel', L.klasikEtiketiKisa);
+    setText('bdOkLabel', L.tamam);
+    setText('allBadgesTitle', L.tumRozetler);
     setText('addFriendSectionTitle', L.yeniArkadasEkle);
     setText('incomingRequestsTitle', L.gelenIstekler);
     setText('friendsListTitle', L.arkadaslarimBaslik);
@@ -1566,8 +1903,12 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
     setText('settingsPanelTitle', L.meyveBaslik);
     setText('resetImagesLabel', L.tumunuSifirla);
     setText('doneBtnLabel', L.tamam);
-    setText('allTimeTab', L.tumZamanlar);
-    setText('todayTab', L.bugun);
+    setText('allTimeLbl', L.tumZamanlar);
+    setText('weekTabLbl', L.buHafta);
+    setText('todayTabLbl', L.bugun);
+    setText('timeAllTimeLbl', L.tumZamanlar);
+    setText('timeWeekLbl', L.buHafta);
+    setText('timeTodayLbl', L.bugun);
     setText('gameOverTitle', L.gameOverTitle);
     setText('showLeaderboardLabel', L.tabloBtn);
     setText('restartLabel', L.tekrarBtn);
@@ -1613,29 +1954,166 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
     canvas.height = Math.round(H * DPR);
     ctx.setTransform(DPR,0,0,DPR,0,0);
 
-    jarLeft = W * 0.08;
-    jarRight = W * 0.92;
     jarTop = H * 0.12;
     jarBottom = H * 0.96;
-    jarWidth = jarRight - jarLeft;
     jarHeight = jarBottom - jarTop;
-    dangerY = jarTop + jarHeight * 0.045;
+    snapJarBounds(); // jarLeft/jarRight/jarWidth/dangerY buradan ayarlanır (büyüme seviyesine göre)
   }
   window.addEventListener('resize', resize);
   window.addEventListener('orientationchange', ()=>setTimeout(resize,200));
+  // ÖNEMLİ: resize() eskiden sadece sayfa yüklenirken ve pencere boyutu değişince çağrılıyordu.
+  // Ama mod değiştirince (ör. Büyüyen Kavanoz'a geçince topAtBtn gizlenip farklı butonlar
+  // gösteriliyor) #gameWrap'in gerçek yüksekliği de değişiyor — canvas'ın iç çözünürlüğü
+  // (canvas.width/height) ise eski boyutta kalıp güncellenmiyordu. canvas CSS'te width:100%;
+  // height:100% olduğundan, tarayıcı iç çözünürlüğü yeni kutuya sığdırmak için görüntüyü
+  // dikey/yatay farklı oranda GERİYORDU — toplar bu yüzden yuvarlak değil, hafif oval/ezik
+  // görünüyordu (özellikle Büyüyen Kavanoz'da, çünkü o mod alt buton satırını değiştiriyor).
+  // ResizeObserver, #gameWrap'in boyutu HER DEĞİŞTİĞİNDE (mod geçişi, buton gizleme/gösterme,
+  // döndürme, klavye açılması, vb.) otomatik olarak resize()'ı tekrar çağırır, böylece canvas
+  // her zaman gerçek kutu boyutuyla birebir eşleşir ve toplar her modda tam yuvarlak kalır.
+  if(window.ResizeObserver){
+    new ResizeObserver(()=>resize()).observe(wrap);
+  }
 
-  function radiusOf(level){ return jarWidth * LEVELS[level].r; }
+  function radiusOf(level){ return jarWidth * LEVELS[level].r * (growingMode ? growBallScale : 1); }
+
+  // ---------- Kavanozun Büyümesi (sadece "Büyüyen Kavanoz" modunda) ----------
+  // TASARIM: kavanoz HİÇBİR ZAMAN küçülmez/kısıtlanmaz — geometrik daraltma denendi ama
+  // oyunu oynanamaz hale getiriyordu (ilk seviye bile geçilemiyordu). Onun yerine BÜYÜME
+  // İLLÜZYONU top boyutuyla veriliyor: 1. seviyede toplar normalden büyük (kavanoz dar/sıkışık
+  // hissettirir), seviye arttıkça toplar küçülüp normale döner (kavanoz "büyümüş" gibi hissettirir).
+  // Kavanozun gerçek oynanabilir alanı Klasik Mod ile birebir aynıdır, hiçbir zaman kısıtlanmaz.
+  // Seviye açık uçludur (1, 2, 3, ... sonsuz) — eşik İVMELENİR (500, 1500, 3000, 5000...).
+  // Zaman Modu, Klasik, Günün Denemesi ve eğitim bundan hiç etkilenmez.
+  const GROWING_LEVEL_STEP = 500; // eşik(L) = STEP * (L-1) * L / 2  →  500, 1500, 3000, 5000, 7500...
+  const GROWING_MAX_JAR_TIER = 15; // bu seviyeden sonra toplar normal boyutunda sabitlenir
+  // index 0 = Seviye 1 (toplar en büyük/sıkışık), index 14 = Seviye 15+ (normal Klasik boyutu).
+  const GROWING_BALL_SCALES = [1.75,1.6661,1.5861,1.5099,1.4378,1.3699,1.3063,1.2474,1.1933,1.1444,1.1011,1.0638,1.0333,1.011,1]; // örnek — sen oynayınca ayarlarız, öncekinden çok daha belirgin
+  const GROWING_JOKER_ORDER = ['small', 'big', 'shuffle']; // seviye 3,6,9,12... sırayla bu ödülü verir
+
+  let growingLevel = 1; // "Seviye N" — açık uçlu, 1'den başlar
+  let growBallScale = 1, growTargetBallScale = 1; // loop() içinde buraya yumuşak kayar
+  let growCelebrateUntil = 0; // performance.now() bazlı bitiş anı, 0/geçmiş = kutlama yok
+  let growCelebrateLevel = 1; // kutlanan seviye (yazıda gösterilir)
+  let growCharSx = 0; // karakterin son çizildiği yatay konum (toz patlaması buraya konur)
+  let growShakeUntil = 0; // ekran sarsıntısının biteceği an (performance.now() bazlı)
+  let growShakeMag = 0; // sarsıntının şiddeti (piksel)
+
+  // Skordan seviyeyi bulan TERS formül (eşik(L) = 500*(L-1)*L/2'nin tersi).
+  function growingLevelForScore(sc){
+    return Math.floor((250 + Math.sqrt(62500 + 1000 * sc) + 1e-9) / 500);
+  }
+  function growingJarTier(level){
+    return Math.min(level, GROWING_MAX_JAR_TIER) - 1; // 0-index, dizinin sonunda sabitlenir
+  }
+  function jarUsesGrowth(){
+    return growingMode; // sadece bağımsız "Büyüyen Kavanoz" modunda geçerli
+  }
+  function updateGrowingLevelUI(){
+    const badge = document.getElementById('growingLevelBadge');
+    if(!badge) return;
+    badge.style.display = growingMode ? 'inline-block' : 'none';
+    if(growingMode) badge.textContent = '🏅 ' + growingLevel;
+  }
+  // resize()/resetGame() gibi anlık durumlarda kavanozu ayarlar — HER ZAMAN standart/tam boyut
+  // (Büyüyen Kavanoz'da da), kısıtlama yok. snapGrowZone sadece top ölçeğini anlık ayarlar.
+  function snapJarBounds(){
+    jarTop = H * 0.12; jarBottom = H * 0.96;
+    jarHeight = jarBottom - jarTop;
+    if(growingMode){
+      // Kavanoz HER ZAMAN sabit bu genişlikte — karaktere göre büyüyüp küçülmez.
+      // drawGrowZone() bu sabit boşluğa göre karakterin/platformun boyutunu otomatik ayarlar.
+      jarLeft = W * 0.05; jarRight = W * 0.80;
+    } else {
+      jarLeft = W * 0.08; jarRight = W * 0.92;
+    }
+    jarWidth = jarRight - jarLeft;
+    dangerY = jarTop + jarHeight * 0.045;
+    snapGrowZone();
+  }
+  // Top ölçeğini (animasyonsuz) mevcut seviyeye göre ayarlar. Diğer modlarda ölçek hep 1'dir.
+  function snapGrowZone(){
+    growBallScale = growingMode ? GROWING_BALL_SCALES[growingJarTier(growingLevel)] : 1;
+    growTargetBallScale = growBallScale;
+    growCharFeetY = growingCharFeetYFor(growingLevel);
+    growCharTargetFeetY = growCharFeetY;
+    updateGrowingLevelUI();
+  }
+  // Skor eşiği aşıldıysa seviyeyi (ve top ölçeği hedefini) günceller; gerçek geçiş loop()
+  // içindeki yumuşak animasyonla olur. Birden fazla seviye birden atlanmışsa (büyük bir
+  // birleşmeyle), aradaki her 3'ün katı seviye için joker ödülü de sırayla verilir.
+  function checkJarGrowth(){
+    if(!jarUsesGrowth()) return;
+    const newLevel = growingLevelForScore(score);
+    if(newLevel <= growingLevel) return;
+    const oldLevel = growingLevel;
+    growingLevel = newLevel;
+    growTargetBallScale = GROWING_BALL_SCALES[growingJarTier(growingLevel)];
+    growCharTargetFeetY = growingCharFeetYFor(growingLevel);
+    growCelebrateUntil = performance.now() + 1000; // 1 sn'lik kutlama — oyun bu sürede donar
+    growCelebrateLevel = growingLevel;
+    spawnParticles(growCharSx, growCharTargetFeetY, '#8B5E3C', 14); // yeni kata çıkarken toz patlaması
+    growShakeUntil = performance.now() + 260; // kısa bir ekran sarsıntısı
+    growShakeMag = 5;
+    updateGrowingLevelUI();
+    // Aradan geçilen her 3'ün katı seviye için sırayla joker ödülü (küçük → büyük → karıştır → tekrar)
+    let jokerMsg = '';
+    for(let lvl = oldLevel + 1; lvl <= newLevel; lvl++){
+      if(lvl % 3 !== 0) continue;
+      const idx = Math.floor(lvl / 3 - 1) % GROWING_JOKER_ORDER.length;
+      const jokerType = GROWING_JOKER_ORDER[idx];
+      if(jokerType === 'small'){ smallJokers++; jokerMsg = '⬆️'; }
+      else if(jokerType === 'big'){ bigJokers++; jokerMsg = '📌'; }
+      else { shuffleUsed = false; jokerMsg = '🔀'; }
+      updateJokerUI();
+    }
+    if(jokerMsg) flashHint(L.seviyeAtladiJoker.replace('{n}', growingLevel).replace('{j}', jokerMsg));
+  }
+
+  let timeMode = false; // Zaman Modu aktif mi (randomSpawnLevel bunu kullanıyor, o yüzden en üstte tanımlı olmalı)
+  let growingMode = false; // Büyüyen Kavanoz modu aktif mi — ayrı, bağımsız bir mod
+  let tutorialActive = false; // Etkileşimli eğitim modu (randomSpawnLevel ve kayıt/XP/game-over kodları kullanıyor)
+
+  // Günün Denemesi: tarih tabanlı deterministik RNG — herkese aynı top sırası gelir
+  let dailyMode = false;
+  let dailyRng = null;
+  let dailySavedState = null;
+  const META_KEY = 'ballbasket_meta';
+  let meta = null; // görev/rozet/seri verisi — loadMeta() dosya sonunda doldurur
+  let jokerUsedThisGame = false; // 🧠 Saf Yetenek rozeti için (resetGame açılışta kullanıyor)
+  let gameMerges = 0, gameBestCombo = 0;                       // oyun sonu özeti için
+  let adRewardUsed = { small: false, big: false, shuffle: false }; // reklam jokeri oyun başına 1
+  function mulberry32(seed){
+    return function(){
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
 
   function randomSpawnLevel(){
-    const r = Math.random();
+    if(tutorialActive) return 0; // eğitimde hep Kiraz gelir — birleştirmesi kolay olsun
+    if(timeMode) return randomSpawnLevelTimeMode();
+    const r = dailyMode && dailyRng ? dailyRng() : Math.random();
     if (r < 0.50) return 0;       // %50 seviye 1
     if (r < 0.80) return 1;       // %30 seviye 2
     if (r < 0.95) return 2;       // %15 seviye 3
     return 3;                      // %5  seviye 4 — max
   }
 
+  // Zaman Modu: süre kısıtlı olduğu için toplar Elma'dan (5. seviye) başlasın,
+  // büyük toplara (ve dolayısıyla XP'ye) çok daha hızlı ulaşılsın.
+  function randomSpawnLevelTimeMode(){
+    const r = Math.random();
+    if (r < 0.45) return 4;  // Elma (5. seviye)
+    if (r < 0.75) return 5;  // Armut (6. seviye)
+    if (r < 0.92) return 6;  // Mango (7. seviye)
+    return 7;                 // Ananas (8. seviye)
+  }
+
   // ---------- Oyun durumu ----------
-  let smallJokers = 3;
+  let smallJokers = 1;
   let bigJokers = 1;
   let activeJoker = null; // 'small' veya 'big'
   let balls = [];      
@@ -1664,6 +2142,15 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
   // newLevel (0-indexli LEVELS dizisi) → kazanılan XP. Küçük toplar (Kiraz-Elma) hiç vermiyor,
   // büyüdükçe hızla artıyor. XP kalıcıdır, skor gibi oyun bitince/resetlenince sıfırlanmaz.
   const XP_FOR_LEVEL = [0, 0, 0, 0, 0, 10, 30, 100, 150, 250, 400];
+
+  // Zaman Modu'nda süre kısıtlı olduğu için büyük top yapmak çok daha zor —
+  // adaletsiz olmasın diye süre kısaldıkça XP çarpanı artıyor.
+  function getXpMultiplier(){
+    if(!timeMode) return 1; // Klasik Mod: sınırsız süre, çarpan yok
+    if(activeTimeSeconds === 60) return 4;   // 1 dk
+    if(activeTimeSeconds === 180) return 2.5; // 3 dk
+    return 1.8; // 5 dk
+  }
   let sessionXpEarned = 0;
 
   async function syncSessionXp(){
@@ -1697,7 +2184,7 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
 
     document.getElementById('goXpEarnedText').textContent = `+${result.earned} XP`;
     document.getElementById('goXpLevelText').textContent = `⭐ ${L.seviye} ${newInfo.level}`;
-    document.getElementById('goXpNextText').textContent = `${newInfo.xp} / ${newInfo.nextLevelXp} XP`;
+    document.getElementById('goXpNextText').textContent = `${newInfo.xp - newInfo.currentLevelXp} / ${newInfo.nextLevelXp - newInfo.currentLevelXp} XP`;
 
     const oldBar = document.getElementById('goXpBarOld');
     const newBar = document.getElementById('goXpBarNew');
@@ -1793,6 +2280,8 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
 
   // ---------- Oyun Durumu Kaydet/Yükle ----------
   function saveGameState() {
+    if(tutorialActive) return; // eğitim asla kayıtlı oyunun üzerine yazmaz
+    if(dailyMode) return;      // günlük deneme kaydedilmez (tek hak, devam yok)
     if(gameOver) return;
     try {
       const state = {
@@ -1809,7 +2298,9 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
         shuffleUsed,
         topAtUsed,
         timeMode,
-        timeRemaining
+        timeRemaining,
+        activeTimeSeconds,
+        growingMode
       };
       localStorage.setItem('ballbasket_gamestate', JSON.stringify(state));
     } catch(e) {}
@@ -1835,8 +2326,15 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       spawnWaitingBall();
       renderNextIcon();
       if(state.timeMode && state.timeRemaining > 0) {
-        startTimeMode(state.timeRemaining);
+        startTimeMode(state.timeRemaining, state.activeTimeSeconds || state.timeRemaining);
+      } else {
+        timeMode = false; // eski kayıt (activeTimeSeconds yoksa) Klasik varsayılır
       }
+      growingMode = !!state.growingMode; // eski kayıtlarda (bu alan yoksa) Klasik/Zaman varsayılır
+      // timeMode ve growingMode artık kesinleşti — kavanoz boyutunu ONDAN SONRA ayarlıyoruz,
+      // yoksa başka bir modun kaydı geri yüklenirken yanlış büyüme mantığı uygulanabilirdi.
+      growingLevel = growingLevelForScore(score); snapJarBounds();
+      loadBest(); // devam edilen modun (Klasik/Zaman kategorisi) rekoru başlıkta doğru görünsün
       return true;
     } catch(e) { return false; }
   }
@@ -1866,14 +2364,24 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
   }
 
 
+  // Her mod kendi rekorunu tutar: Klasik ('suika_best', eski kayıtlarla uyumlu olsun diye
+  // adı değişmedi), Zaman Modu süresine göre ayrı ayrı, Günün Denemesi ayrı.
+  // Böylece Zaman Modu'nda Klasik'in rekoru değil, o sürenin kendi rekoru gösterilir.
+  function bestStorageKey(){
+    if(growingMode) return 'suika_best_growing';
+    if(timeMode) return 'suika_best_time' + activeTimeSeconds;
+    return 'suika_best'; // Not: Günün Denemesi için hiç kullanılmıyor, her gün farklı toplar geldiği
+    // için "kişisel rekor" kavramı orada anlamsız — sıralama zaten skor tablosunda var.
+  }
+
   function loadBest() {
-      const saved = localStorage.getItem('suika_best');
+      const saved = localStorage.getItem(bestStorageKey());
       best = saved ? parseInt(saved, 10) : 0;
       updateScoreUI();
   }
 
   function saveBest() {
-      localStorage.setItem('suika_best', String(best));
+      localStorage.setItem(bestStorageKey(), String(best));
   }
 
   loadBest(); // Başlangıçta yükle
@@ -1923,6 +2431,16 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
     const level = currentLevel;
     const r = radiusOf(level);
     const x = clamp(aimX, jarLeft+r, jarRight-r);
+    // Eğitim: joker adımlarında top atmak tamamen kilitli — tek yol jokeri kullanmak
+    if(tutorialActive && (tutStage === 2 || tutStage === 3)){
+      flashHint(tutStage === 2 ? L.tutOnceJoker : L.tutS4);
+      return;
+    }
+    // Eğitim: ilk iki adımda top sadece ok işaretli hedef bölgeye bırakılabilir
+    if(tutorialActive && tutTargetX !== null && Math.abs(x - tutTargetX) > (jarRight - jarLeft) * 0.14){
+      tutorialNudge();
+      return; // top düşmez, oyuncu tekrar dener
+    }
     balls.push({
       x, y: jarTop - r*0.4, vx:0, vy:0, r, level,
       id: idCounter++, bornAt: performance.now(), settleSince:null, popT:0
@@ -1937,6 +2455,7 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
     aimX = clamp(aimX, jarLeft+waitingR, jarRight-waitingR);
     renderNextIcon();
     saveGameState();
+    tutorialOnEvent('drop', x);
   }
 
   function fastDropBall() {
@@ -2027,7 +2546,7 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
         settleSince:null, popT: 1
       });
       const pts = scoreForMerge(newLevel);
-      sessionXpEarned += (XP_FOR_LEVEL[newLevel] || 0);
+      if(!tutorialActive) sessionXpEarned += Math.round((XP_FOR_LEVEL[newLevel] || 0) * getXpMultiplier());
       if(pendingComboReset){ comboCount = 0; pendingComboReset = false; }
       comboCount++;
       const multiplier = 1 + (comboCount - 1) * 0.2;
@@ -2037,7 +2556,13 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       spawnParticles(mx,my, LEVELS[newLevel].color);
       pop(260 + newLevel*40);
       if(comboCount >= 2) playCombo(comboCount);
+      triggerChainReaction(a.x, a.y, c.x, c.y, comboCount);
       updateScoreUI();
+      tutorialOnEvent('merge');
+      metaOnMerge(newLevel, comboCount);
+      gameMerges++;
+      if(comboCount > gameBestCombo) gameBestCombo = comboCount;
+      checkJarGrowth();
     }
 
     for(let i=0;i<balls.length;i++){
@@ -2125,6 +2650,54 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
     }
     particles = particles.filter(p=>p.life>0);
     updateScorePopups(dt);
+    updateChainRings(dt);
+  }
+
+  // ---------- Zincir Reaksiyon ----------
+  // Aynı top düşüşünde art arda 3+ birleşme olduğunda (comboCount>=3), normal kombo
+  // çarpanının üstüne ekstra bir puan bonusu + birleşen iki topun merkezleri arasında
+  // koyu mavi, çentikli bir şimşek çizgisi belirir — art arda birleşmelerin sıradan bir
+  // olay değil, gerçek bir "olay" gibi hissettirilmesi için.
+  let chainRings = []; // ad kaldı ama artık şimşek çizgisi objeleri tutuyor
+  function spawnChainRing(ax, ay, cx, cy, comboCount){
+    const segments = 5;
+    const points = [];
+    for(let i = 0; i <= segments; i++){
+      const t = i / segments;
+      const mid = i > 0 && i < segments; // uçlar sabit kalsın, sadece aradaki noktalar çentiklensin
+      points.push({
+        x: ax + (cx - ax) * t + (mid ? (Math.random() - 0.5) * 16 : 0),
+        y: ay + (cy - ay) * t + (mid ? (Math.random() - 0.5) * 16 : 0)
+      });
+    }
+    chainRings.push({ points, life: 1, width: 2 + Math.min(comboCount, 6) });
+  }
+  function updateChainRings(dt){
+    for(const r of chainRings){ r.life -= dt * 1.3; } // önceki 2.2'den yavaş — biraz daha uzun görünür kalsın
+    chainRings = chainRings.filter(r => r.life > 0);
+  }
+  function drawChainRings(){
+    if(chainRings.length === 0) return;
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    for(const r of chainRings){
+      const alpha = Math.max(0, r.life);
+      ctx.strokeStyle = `rgba(21,58,124,${alpha})`; // koyu mavi — sarı yerine, görmesi kolay olsun diye
+      ctx.lineWidth = r.width * alpha + 1;
+      ctx.beginPath();
+      r.points.forEach(function(p, i){ if(i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  // Her birleşmede çağrılır; sadece comboCount>=3 olunca gerçek bir etki yaratır.
+  function triggerChainReaction(ax, ay, cx, cy, comboCount){
+    if(comboCount < 3) return;
+    const chainBonus = (comboCount - 2) * 40; // 3'te +40, 4'te +80, 5'te +120...
+    score += chainBonus;
+    // spawnChainRing(ax, ay, cx, cy, comboCount); // görsel beğenilmedi — şimdilik kapalı, ileride farklı bir tasarımla geri gelir
+    flashHint(L.zincirMesaji.replace('{n}', comboCount).replace('{p}', chainBonus));
   }
 
   function checkGameOver(now){
@@ -2156,10 +2729,40 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
   };
 
 function triggerGameOver(){
+    if(tutorialActive) return; // eğitimde yanmak yok
+    metaOnGameOver();
     gameOver = true;
     playGameOver();
     clearGameState();
-    if(score > best){ best = score; saveBest(); }
+    // Özet ekranı (rekor güncellenmeden ÖNCE hesaplanmalı)
+    document.getElementById('goStatCombo').textContent = 'x' + gameBestCombo;
+    document.getElementById('goStatMerge').textContent = gameMerges;
+    // Rekor kutusu Günün Denemesi'nde gösterilmez: her gün farklı toplar geldiği için
+    // "kişisel rekor" kavramı anlamsız — sıralaman zaten skor tablosunda görünüyor.
+    document.getElementById('goStatRecordBox').style.display = dailyMode ? 'none' : 'block';
+    if(!dailyMode){
+      document.getElementById('goStatRecord').textContent = score > best ? L.yeniRekor : L.rekoraKalan.replace('{n}', (best - score + 1));
+    }
+    // Günlük deneme: skor otomatik kaydedilir (giriş şartı olduğu için isim hazır)
+    if(dailyMode){
+      const ses = getAuthSession();
+      if(ses){
+        saveScore((ses.user && ses.user.username) || 'Oyuncu', score);
+        document.getElementById('saveScoreWrap').style.display = 'none';
+        document.getElementById('saveMsg').textContent = ''; // otomatik kayıt mesajını başlık versin
+        document.getElementById('gameOverTitle').textContent = L.denemeBittiBaslik;
+      }
+    } else {
+      document.getElementById('saveScoreWrap').style.display = 'flex';
+      document.getElementById('gameOverTitle').textContent = L.gameOverTitle;
+    }
+    // Günlük deneme bittiyse: yedeklenen klasik kayıt geri gelsin
+    if(dailyMode && dailySavedState){
+      try { localStorage.setItem('ballbasket_gamestate', dailySavedState); } catch(e){}
+      dailySavedState = null;
+      checkSavedGame();
+    }
+    if(!dailyMode && score > best){ best = score; saveBest(); } // Deneme skoru hiçbir rekor kategorisine yazılmaz
     updateScoreUI();
     document.getElementById('finalScoreText').textContent = L.finalSkor + ': ' + score;
     document.getElementById('gameOverOverlay').classList.add('show');
@@ -2181,11 +2784,17 @@ function triggerGameOver(){
 
   function resetGame(){
     syncSessionXp();
-    smallJokers = 3;
+    smallJokers = 1;
     bigJokers = 1;
+    applyBonusJokers(); // günlük görev ödülleri (varsa) bu oyuna eklenir
+    jokerUsedThisGame = false;
+    gameMerges = 0;
+    gameBestCombo = 0;
+    adRewardUsed = { small: false, big: false, shuffle: false };
     activeJoker = null;
     comboCount = 0;
     pendingComboReset = false;
+    chainRings = [];
     topAtUsed = false;
     shuffleUsed = false;
     dropSession++;
@@ -2196,6 +2805,7 @@ function triggerGameOver(){
     updateJokerUI();
     balls = []; particles = [];
     score = 0; gameOver = false; overLineSince = null;
+    growingLevel = 1; snapJarBounds(); // her yeni Büyüyen Kavanoz oyunu Seviye 1'den, dar kavanozla başlar
     currentLevel = randomSpawnLevel();
     nextLevel = randomSpawnLevel();
     spawnWaitingBall();
@@ -2213,7 +2823,10 @@ function triggerGameOver(){
   // ---------- Çizim ----------
   function drawCountdown(){
     if(overLineSince === null) return;
-    const elapsed = performance.now() - overLineSince;
+    // Duraklatılmışken ekrandaki sayı da donsun (gerçek zaman akmaya devam etse bile) —
+    // yoksa "2'de durdum ama 1,0 diye indi, sonra geri zıpladı" gibi kafa karıştırıcı görünüyordu.
+    const referenceNow = (gamePaused && pauseStartedAt !== null) ? pauseStartedAt : performance.now();
+    const elapsed = referenceNow - overLineSince;
     const remaining = Math.ceil((3000 - elapsed) / 1000);
     if(remaining <= 0) return;
 
@@ -2270,6 +2883,145 @@ function triggerGameOver(){
     ctx.restore();
   }
 
+  // ---------- Büyüyen Kavanoz Karakteri: 4 aşamalı çizim + 16 kademeli yükselen platform ----------
+  // Karakter kavanozun yanında zeminde durur; her seviye atlayışta bir kat yukarı çıkar.
+  // 16 kat eşit aralıklarla dağıtılmış — kafa kavanozun üst sınırına çok yaklaşır. Katlar 6
+  // gerçek görselle çizilir (1-3-4-4-3-1 dağılımı): kat1 (sadece 1. seviye, kapı), kat2
+  // (2-4, saksılı), kat3 (5-8, taş), kat4 (9-12, krem/sütunlu), kat5 (13-15, bronz/mermer),
+  // kat6 (sadece 16. seviye, mücevherli — en gösterişli). Karakterin kendi 4 aşaması da
+  // aynı ana kademelerle (1-4/5-8/9-12/13-16) örtüşür.
+  const GROWING_CHAR_TIER_MAX = [4, 8, 12, 16]; // her aşamanın biteceği seviye
+  const GROWING_CHAR_IMAGES = [new Image(), new Image(), new Image(), new Image()];
+  GROWING_CHAR_IMAGES[0].src = 'images/karakter1.png';
+  GROWING_CHAR_IMAGES[1].src = 'images/karakter2.png';
+  GROWING_CHAR_IMAGES[2].src = 'images/karakter3.png';
+  GROWING_CHAR_IMAGES[3].src = 'images/karakter4.png';
+  const GROWING_FLOOR_IMAGES = [new Image(), new Image(), new Image(), new Image(), new Image(), new Image()];
+  for(let gfi = 0; gfi < 6; gfi++){ GROWING_FLOOR_IMAGES[gfi].src = 'images/kat' + (gfi + 1) + '.png'; }
+  // Kat numarasından (1-16) hangi görselin kullanılacağını bulur — 1-3-4-4-3-1 dağılımı
+  function growingFloorImageIndex(floorNum){
+    if(floorNum === 1) return 0;
+    if(floorNum <= 4) return 1;
+    if(floorNum <= 8) return 2;
+    if(floorNum <= 12) return 3;
+    if(floorNum <= 15) return 4;
+    return 5;
+  }
+
+  function growingCharTier(level){
+    for(let i = 0; i < GROWING_CHAR_TIER_MAX.length; i++){ if(level <= GROWING_CHAR_TIER_MAX[i]) return i; }
+    return GROWING_CHAR_TIER_MAX.length - 1;
+  }
+  // Karakterin ayaklarının bulunması gereken (hedef) Y konumunu hesaplar
+  function growingCharFeetYFor(level){
+    const floorStep = jarHeight * 0.85 / 15; // her katın yüksekliği aynı kalıyor
+    const floors = Math.min(level, 16); // artık 16 kat — kafa kavanoza biraz daha yaklaşıyor
+    return jarBottom - floors * floorStep;
+  }
+
+  let growCharFeetY = 0, growCharTargetFeetY = 0; // loop() içinde buraya yumuşak kayar
+
+  // Kavanozun sağ yanında yükselen platform + karakteri çizer. Karakter ayakları
+  // growCharFeetY'de (animasyonlu), her platform kendi kademesinin rengiyle boyanır.
+  function drawGrowZone(){
+    if(!growingMode) return;
+    const tier = growingCharTier(growingLevel);
+    const img = GROWING_CHAR_IMAGES[tier];
+    const floorStep = jarHeight * 0.85 / 15;
+    const rightMargin = W - jarRight; // kavanozun bitişinden ekranın sonuna kadar kalan boşluk
+    const maxFloorW = rightMargin * 0.70; // platform bu boşluğun en fazla %70'ini kullanabilir — geri kalanı iki yanda güvenli boşluk
+    let charH = jarHeight * 0.30; // bilerek büyük hedef — aşağıdaki otomatik sınırlama her cihaz için gerçek maksimumu bulur
+    const naturalRatio = (img.complete && img.naturalHeight) ? img.naturalWidth / img.naturalHeight : 1.2;
+    let charW = charH * naturalRatio;
+    let floorW = charW * 0.95;
+    if(floorW > maxFloorW){ // dar/uzun ekranlarda sığmıyorsa orantılı küçült — hiçbir cihazda taşmaz
+      const shrink = maxFloorW / floorW;
+      charH *= shrink; charW *= shrink; floorW *= shrink;
+    }
+    const sx = jarRight + rightMargin * 0.52; // bu boşluğun ortasına yakın
+    growCharSx = sx; // toz patlaması gibi diğer efektler bu konumu kullanır
+
+    ctx.save();
+    // Platformlar — 1'den mevcut seviyeye kadar (en fazla 16), her biri kendi kademe görseliyle
+    const floors = Math.min(growingLevel, 16);
+    for(let i = 1; i <= floors; i++){
+      const img = GROWING_FLOOR_IMAGES[growingFloorImageIndex(i)];
+      const fTop = jarBottom - i * floorStep;
+      const fH = floorStep * 1.01; // hafif üst üste bindirme — aralarında hiç boşluk kalmasın
+      const fLeft = sx - floorW / 2;
+      if(img.complete && img.naturalWidth > 0){
+        ctx.drawImage(img, fLeft, fTop, floorW, fH);
+      }
+    }
+    // Altın kademede (13-16. seviye) karakterin etrafında yavaşça parıldayan küçük yıldızlar
+    if(tier === 3){
+      const now = performance.now();
+      const sparklePts = [[-0.55,-0.85],[0.6,-0.6],[-0.35,0.15],[0.55,0.35]];
+      ctx.fillStyle = '#FFD54F';
+      sparklePts.forEach(function(p, i){
+        const twinkle = 0.4 + 0.6 * Math.abs(Math.sin(now / 380 + i * 1.7));
+        const px = sx + p[0] * charW;
+        const py = (growCharFeetY - charH * 0.55) + p[1] * charH;
+        const r = 3.5 * twinkle;
+        ctx.globalAlpha = twinkle;
+        ctx.beginPath();
+        ctx.moveTo(px, py - r); ctx.lineTo(px + r * 0.3, py - r * 0.3);
+        ctx.lineTo(px + r, py); ctx.lineTo(px + r * 0.3, py + r * 0.3);
+        ctx.lineTo(px, py + r); ctx.lineTo(px - r * 0.3, py + r * 0.3);
+        ctx.lineTo(px - r, py); ctx.lineTo(px - r * 0.3, py - r * 0.3);
+        ctx.closePath(); ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+    // Karakter — ayakları growCharFeetY'de (animasyonlu), yukarı doğru charH kadar uzanır.
+    // Durgunken hafif "nefes alma" efekti — boyutu ~%3.5 oranında yavaşça büyüyüp küçülür.
+    if(img.complete && img.naturalWidth > 0){
+      const breathe = 1 + Math.sin(performance.now() / 450) * 0.035;
+      const bH = charH * breathe, bW = charW * breathe;
+      ctx.drawImage(img, sx - bW / 2, growCharFeetY - bH, bW, bH);
+    }
+    ctx.restore();
+  }
+
+  // Seviye atlama anını gösterişli bir "kutlama karesi"ne çevirir: oyun ~1sn donar,
+  // ekranda altın bir ışık patlaması ve zıplayarak büyüyen "SEVİYE N!" yazısı belirir.
+  // Bu, sadece top boyutu değişiminin fark edilmesi zor olduğu için eklendi — büyüme
+  // anının kendisini net, kutlanan bir olay haline getiriyor.
+  function drawGrowCelebration(){
+    if(!growingMode) return;
+    const now = performance.now();
+    const remain = growCelebrateUntil - now;
+    if(remain <= 0) return;
+    const progress = 1 - remain / 1000; // 0 (yeni başladı) → 1 (bitmek üzere)
+    const cx = (jarLeft + jarRight) / 2, cy = (jarTop + jarBottom) / 2;
+
+    ctx.save();
+    // Ekranı hafifçe karart, dikkat merkeze toplansın
+    ctx.fillStyle = `rgba(58,43,34,${0.18 * Math.sin(progress * Math.PI)})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Dışa doğru genişleyip sönen altın ışık patlaması
+    const ringR = 40 + progress * 220;
+    const ringAlpha = (1 - progress) * 0.55;
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, ringR);
+    grad.addColorStop(0, `rgba(255,215,0,${ringAlpha})`);
+    grad.addColorStop(1, 'rgba(255,215,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(cx, cy, ringR, 0, Math.PI * 2); ctx.fill();
+
+    // Zıplayarak beliren, hafif "nefes alan" SEVİYE yazısı
+    const popIn = progress < 0.25 ? (progress / 0.25) : 1; // ilk %25'te hızla büyür
+    const breathe = 1 + Math.sin(progress * Math.PI) * 0.12 * (1 - progress);
+    const scale = popIn * breathe;
+    ctx.font = `800 ${Math.round(44 * scale)}px "Baloo 2", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(142,36,170,0.85)'; ctx.shadowBlur = 22;
+    ctx.fillStyle = '#fff';
+    ctx.fillText('🎉 ' + L.seviyeYazisi + ' ' + growCelebrateLevel + '!', cx, cy);
+    ctx.restore();
+  }
+
   function roundRect(x,y,w,h,r){
     ctx.moveTo(x+r,y);
     ctx.arcTo(x+w,y,x+w,y+h,r);
@@ -2305,12 +3057,14 @@ function triggerGameOver(){
       // Önce arka planı doldur (JPEG köşelerindeki siyahlığı gizler)
       ctx.fillStyle = lvl.color || '#000';
       ctx.fill();
-      // Resmi daire içine tam sığdır - cover mantığı
-      const minDim = Math.min(img.width, img.height);
+      // Resmi daire içine tam sığdır: kaynağın kendi oranına GÜVENME (kare olmayabilir,
+      // bu da gerilmeye sebep olurdu) — ortasından her zaman KARE bir bölge kırp, sonra
+      // bu kareyi daireye sığdır. Böylece top hiçbir zaman eninde/boyuna gerilmiş çıkamaz.
       const extraScale = (lvl.nameEn === 'Mars' || lvl.nameEn === 'Jupiter' || lvl.nameEn === 'Uranus') ? 1.15 : (['Tennis','Baseball','Volleyball','Basketball','Cricket','Bowling','Beach Ball'].includes(lvl.nameEn)) ? 1.12 : (lvl.nameEn === 'Golf') ? 1.25 : (lvl.nameEn === 'Soccer' || lvl.nameEn === 'Ping Pong') ? 1.20 : (lvl.nameEn === 'Billiard') ? 1.18 : (['Lemon','Kiwi','Mouse'].includes(lvl.nameEn)) ? 1.18 : 1.0;
-      const s = (r * 2) / minDim * extraScale;
-      const iw = img.width * s, ih = img.height * s;
-      ctx.drawImage(img, -iw/2, -ih/2, iw, ih);
+      const srcSize = Math.min(img.width, img.height); // kaynaktan alınacak karenin kenarı
+      const srcX = (img.width - srcSize) / 2, srcY = (img.height - srcSize) / 2; // ortadan kırp
+      const destSize = r * 2 * extraScale; // hedefte de her zaman kare (genişlik=yükseklik)
+      ctx.drawImage(img, srcX, srcY, srcSize, srcSize, -destSize / 2, -destSize / 2, destSize, destSize);
       ctx.restore();
       ctx.beginPath();
       ctx.arc(0,0,r,0,Math.PI*2);
@@ -2373,7 +3127,16 @@ function triggerGameOver(){
 
   function render(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.save();
+    // Kısa ekran sarsıntısı — seviye atlayınca tetiklenir, süre bitince otomatik söner
+    const shakeRemain = growShakeUntil - performance.now();
+    if(shakeRemain > 0){
+      const shakeT = shakeRemain / 260;
+      const mag = growShakeMag * shakeT;
+      ctx.translate((Math.random() - 0.5) * mag, (Math.random() - 0.5) * mag);
+    }
     drawJar();
+    drawGrowZone();
 
     if(activeJoker) {
       ctx.save();
@@ -2387,12 +3150,16 @@ function triggerGameOver(){
       drawBall(b);
     }
     drawParticles();
+    // drawChainRings(); // görsel beğenilmedi — şimdilik kapalı
     drawScorePopups();
     drawCountdown();
+    drawTutorialTarget();
 
     if(!activeJoker) {
       drawWaitingBall();
     }
+    drawGrowCelebration(); // her şeyin üstünde durur, en son çizilmeli
+    ctx.restore(); // render() başındaki sarsıntı save()'iyle eşleşir
   }
 
   let gamePaused = true; // menü açık olduğu için başlangıçta duraklı
@@ -2423,7 +3190,22 @@ function triggerGameOver(){
     }
     wasPausedLastFrame = gamePaused;
 
-    if(!gameOver && !gamePaused){
+    // Büyüyen Kavanoz'da top ölçeği hedefine yumuşak kayar — kavanoz hiç değişmez,
+    // sadece yeni doğan toplar giderek küçülür (radiusOf bunu kullanır)
+    if(growBallScale !== growTargetBallScale){
+      const t = Math.min(1, dt * 4);
+      growBallScale += (growTargetBallScale - growBallScale) * t;
+      if(Math.abs(growBallScale - growTargetBallScale) < 0.002) growBallScale = growTargetBallScale;
+    }
+    // Karakter yeni katına yumuşak yükselir
+    if(growCharFeetY !== growCharTargetFeetY){
+      const t = Math.min(1, dt * 3.5);
+      growCharFeetY += (growCharTargetFeetY - growCharFeetY) * t;
+      if(Math.abs(growCharFeetY - growCharTargetFeetY) < 0.5) growCharFeetY = growCharTargetFeetY;
+    }
+
+    const growCelebrating = growingMode && performance.now() < growCelebrateUntil;
+    if(!gameOver && !gamePaused && !growCelebrating){
       let remaining = dt;
       let guard = 0;
       while(remaining > 0 && guard < 8){
@@ -2471,18 +3253,33 @@ function triggerGameOver(){
       for(let i = balls.length - 1; i >= 0; i--) {
         const b = balls[i];
         const dist = Math.hypot(b.x - x, b.y - y);
-        
-        const hitR = (activeJoker === 'small' && b.level <= 2) ? b.r * 1.8 : b.r;
-        if(dist <= hitR) { 
-          if(activeJoker === 'small' && b.level > 2) {
-            return; // küçük bomba sadece ilk 3 seviyeye çalışır
+
+        if(dist <= b.r) {
+          if(activeJoker === 'small'){
+            // Yükselt: topu bir üst seviyeye çıkarır (en yüksek seviyedeki topa işlemez)
+            if(b.level >= LEVELS.length - 1){
+              flashHint(L.kucukBombaUyari);
+              return;
+            }
+            const newLevel = b.level + 1;
+            b.level = newLevel;
+            b.r = radiusOf(newLevel);
+            b.popT = 1;
+            spawnParticles(b.x, b.y, LEVELS[newLevel].color, 18);
+            pop(200 + newLevel * 30);
+            smallJokers--;
+            metaOnJokerUsed();
+            tutorialOnEvent('bombUsed');
+            break;
           }
-          
+
           spawnParticles(b.x, b.y, LEVELS[b.level].color, 25);
           balls.splice(i, 1);
           pop(150);
-          
-          if(activeJoker === 'small') smallJokers--; else bigJokers--;
+
+          bigJokers--;
+          metaOnJokerUsed();
+          tutorialOnEvent('bombUsed');
           break;
         }
       }
@@ -2678,10 +3475,12 @@ function triggerGameOver(){
     renderNextIcon();
   });
 document.getElementById('restartBtn').addEventListener('click', function() {
+    if(dailyMode){ exitDailyToMenu(); return; } // günde tek hak — menüye döner
     resetGame();
   });
   
   document.getElementById('restartBtnSmall').addEventListener('click', function() {
+    if(dailyMode){ flashHint(L.gunlukTekHak); return; }
     showConfirmModal(function(){ resetGame(); });
   });
 
@@ -2751,18 +3550,31 @@ document.getElementById('restartBtn').addEventListener('click', function() {
   }
 
   // ---------- Kullanıcı Adı (kalıcı, benzersiz, küfür filtreli) ----------
-  const PROFANITY_LIST = [
-    'amk','aq','mk','oç','oc','piç','pic','yarrak','yarak','siktir','sik ','sikik','sikim',
-    'göt','got','ibne','pezevenk','kahpe','orospu','şerefsiz','serefsiz','gavat','amcık','amcik',
-    'fuck','shit','bitch','asshole','dick','cunt','whore','nigger','faggot','rape','porn','sex'
+  // İki liste: WHOLE = sadece tam kelime olarak geçerse engelle (yoksa "Koç" içindeki "oç",
+  // "Ocak" içindeki "oc", "Essex" içindeki "sex" gibi masum isimler de engelleniyordu).
+  // SUB = ismin herhangi bir yerinde geçerse engelle (uzun/karışması zor kelimeler).
+  const PROFANITY_WHOLE = ['aq','mk','oc','oç','pic','got','sex','rape'];
+  const PROFANITY_SUB = [
+    'amk','piç','yarrak','yarak','siktir','sik ','sikik','sikim',
+    'göt','ibne','pezevenk','kahpe','orospu','şerefsiz','serefsiz','gavat','amcık','amcik',
+    'fuck','shit','bitch','asshole','dick','cunt','whore','nigger','faggot','porn'
   ];
+
+  // Supabase ilike sorguları için joker karakterleri etkisizleştir (% ve _ desen sayılmasın)
+  function ilikeEscape(s){
+    return s.replace(/\\/g,'\\\\').replace(/%/g,'\\%').replace(/_/g,'\\_');
+  }
 
   function isUsernameValid(name){
     const trimmed = name.trim();
     if(trimmed.length < 3 || trimmed.length > 20) return { ok:false, msg: L.kullaniciAdiUzunluk };
     if(!/^[\p{L}0-9_ ]+$/u.test(trimmed)) return { ok:false, msg: L.gecersizKarakter };
     const lower = trimmed.toLocaleLowerCase('tr');
-    for(const w of PROFANITY_LIST){
+    const tokens = lower.split(/[^\p{L}0-9]+/u).filter(Boolean); // boşluk ve _ ile ayrılmış parçalar
+    for(const w of PROFANITY_WHOLE){
+      if(tokens.includes(w)) return { ok:false, msg: L.kullaniciAdiUygunsuz };
+    }
+    for(const w of PROFANITY_SUB){
       if(lower.includes(w)) return { ok:false, msg: L.kullaniciAdiUygunsuz };
     }
     return { ok:true, value: trimmed };
@@ -2817,6 +3629,15 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     const valid = isUsernameValid(name);
     if(!valid.ok) return valid;
     try {
+      // Büyük/küçük harf duyarsız benzersizlik: "Ahmet" alınmışsa "ahmet" de alınamaz
+      // (DB'deki UNIQUE constraint sadece birebir aynı yazımı engelliyor, bu ek kontrol şart)
+      const chkRes = await authorizedFetch(`${SUPABASE_URL}/rest/v1/profiles?select=user_id&username=ilike.${encodeURIComponent(ilikeEscape(valid.value))}`, {});
+      const chkRows = await chkRes.json();
+      if(Array.isArray(chkRows) && chkRows.some(r => r.user_id !== session.user.id)){
+        return { ok:false, msg: L.kullaniciAdiAlinmis };
+      }
+    } catch(e){ /* kontrol başarısızsa DB UNIQUE yine de birebir kopyayı engeller */ }
+    try {
       const res = await authorizedFetch(`${SUPABASE_URL}/rest/v1/profiles`, {
         method: 'POST',
         headers: {
@@ -2856,14 +3677,9 @@ document.getElementById('restartBtn').addEventListener('click', function() {
 
   function renderUsernameSection(){
     const session = getAuthSession();
-    const text = document.getElementById('usernameText');
-    if(!text) return;
-    if(session && session.user && session.user.username){
-      text.textContent = session.user.username;
-    } else {
-      text.textContent = L.kullaniciAdiYok;
-    }
-    document.getElementById('usernameEditWrap').style.display = 'none';
+    const editWrap = document.getElementById('usernameEditWrap');
+    if(!editWrap) return;
+    editWrap.style.display = 'none';
     document.getElementById('usernameInput').value = (session && session.user && session.user.username) || '';
     document.getElementById('usernameMsg').textContent = '';
   }
@@ -2874,10 +3690,33 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     { id: 'yukselis', emoji: '💯', name: 'yukselisAdi', desc: 'yukselisAciklama', check: s => s.highestScore >= 1000 },
     { id: 'usta', emoji: '🔥', name: 'ustaAdi', desc: 'ustaAciklama', check: s => s.highestScore >= 5000 },
     { id: 'efsane', emoji: '👑', name: 'efsaneAdi', desc: 'efsaneAciklama', check: s => s.highestScore >= 10000 },
+    { id: 'superstar', emoji: '🌟', name: 'superstarAdi', desc: 'superstarAciklama', check: s => s.highestScore >= 20000 },
     { id: 'bagimli', emoji: '🎮', name: 'bagimliAdi', desc: 'bagimliAciklama', check: s => s.gamesPlayed >= 10 },
     { id: 'veteran', emoji: '🕹️', name: 'veteranAdi', desc: 'veteranAciklama', check: s => s.gamesPlayed >= 50 },
+    { id: 'demirbilek', emoji: '💪', name: 'demirbilekAdi', desc: 'demirbilekAciklama', check: s => s.gamesPlayed >= 100 },
     { id: 'sosyal', emoji: '👥', name: 'sosyalAdi', desc: 'sosyalAciklama', check: s => s.friendCount >= 1 },
+    { id: 'populer', emoji: '👯', name: 'populerAdi', desc: 'populerAciklama', check: s => s.friendCount >= 5 },
+    { id: 'kelebek', emoji: '🦋', name: 'kelebekAdi', desc: 'kelebekAciklama', check: s => s.friendCount >= 10 },
+    { id: 'seviye10', emoji: '⭐', name: 'seviye10Adi', desc: 'seviye10Aciklama', check: s => computeLevelInfo(s.totalXp).level >= 10 },
+    { id: 'seviye20', emoji: '🌠', name: 'seviye20Adi', desc: 'seviye20Aciklama', check: s => computeLevelInfo(s.totalXp).level >= 20 },
+    { id: 'biraylik', emoji: '📅', name: 'biraylikAdi', desc: 'biraylikAciklama', check: s => s.memberSince && (Date.now() - new Date(s.memberSince).getTime()) > 30*24*3600*1000 },
+    // Oyun içi olaylardan kazanılan rozetler (sunucu bilemez, yerel meta'dan okunur)
+    { id: 'kral', emoji: '👑', name: 'kralAdi', desc: 'kralAciklama', check: s => s.highestScore >= 50000 },
+    { id: 'kombo5', emoji: '⚡', name: 'kombo5Adi', desc: 'kombo5Aciklama', check: s => metaHas('kombo5') },
+    { id: 'kombo8', emoji: '🌩️', name: 'kombo8Adi', desc: 'kombo8Aciklama', check: s => metaHas('kombo8') },
+    { id: 'karpuz', emoji: '🍉', name: 'karpuzAdi', desc: 'karpuzAciklama', check: s => metaHas('karpuz') },
+    { id: 'jokersiz', emoji: '🧠', name: 'jokersizAdi', desc: 'jokersizAciklama', check: s => metaHas('jokersiz') },
+    { id: 'birlesme1k', emoji: '🧩', name: 'birlesme1kAdi', desc: 'birlesme1kAciklama', check: s => metaHas('birlesme1k') },
+    { id: 'seri7', emoji: '💎', name: 'seri7Adi', desc: 'seri7Aciklama', check: s => metaHas('seri7') },
+    { id: 'seri30', emoji: '🚀', name: 'seri30Adi', desc: 'seri30Aciklama', check: s => metaHas('seri30') },
+    { id: 'mukemmelGun', emoji: '☀️', name: 'mukemmelGunAdi', desc: 'mukemmelGunAciklama', check: s => metaHas('mukemmelGun') },
   ];
+
+  // Yerel (localStorage) rozet kayıtlarını mevcut rozet sistemine köprüler
+  function metaHas(id){
+    try { return !!(JSON.parse(localStorage.getItem('ballbasket_meta') || '{}').badges || {})[id]; }
+    catch(e){ return false; }
+  }
 
   function xpThresholdForLevel(level){
     return level <= 1 ? 0 : 250 * level * (level - 1);
@@ -2926,22 +3765,142 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     }
   }
 
+  let lastProfileStats = null;
+  let lastProfileUserId = null;
+  let lastProfileUsername = '';
+
+  function openAllBadgesModal(){
+    if(!lastProfileStats) return;
+    document.getElementById('allBadgesSubtitle').textContent = lastProfileUsername;
+    const grid = document.getElementById('allBadgesGrid');
+    grid.innerHTML = '';
+    BADGES.forEach(b => {
+      const earned = b.check(lastProfileStats);
+      const cell = document.createElement('div');
+      cell.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;background:rgba(255,255,255,0.06);border-radius:14px;padding:12px 6px;';
+      const circle = document.createElement('div');
+      circle.style.cssText = `width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;background:${earned ? '#FFE9C7' : 'rgba(255,255,255,0.08)'};opacity:${earned ? '1' : '0.4'};border:2px solid ${earned ? '#FFB74D' : 'rgba(255,255,255,0.2)'};`;
+      circle.textContent = b.emoji;
+      const label = document.createElement('span');
+      label.style.cssText = `font-size:11px;text-align:center;color:${earned ? '#fff' : 'rgba(255,255,255,0.5)'};font-weight:700;line-height:1.2;`;
+      label.textContent = L[b.name];
+      cell.appendChild(circle);
+      cell.appendChild(label);
+      cell.addEventListener('click', () => showBadgeDetail(b, earned));
+      grid.appendChild(cell);
+    });
+    document.getElementById('allBadgesModal').style.display = 'flex';
+  }
+  window.closeAllBadgesModal = function(){
+    document.getElementById('allBadgesModal').style.display = 'none';
+  };
+
+  const TOP_SCORE_MODES = [
+    { key: 'classic', label: 'klasikModEtiketi', emoji: '🎯' },
+    { key: 'time_1min', label: 'birDkEtiketi', emoji: '⏱️' },
+    { key: 'time_3min', label: 'ucDkEtiketi', emoji: '⏱️' },
+    { key: 'time_5min', label: 'besDkEtiketi', emoji: '⏱️' },
+  ];
+
+  async function fetchTopScoresForUser(userId, mode){
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/scores?select=score,date&user_id=eq.${userId}&mode=eq.${mode}&order=score.desc&limit=5`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch(e){
+      return [];
+    }
+  }
+
+  let currentScoreModalUserId = null;
+
+  function openUserScoresModal(userId, username){
+    currentScoreModalUserId = userId;
+    document.getElementById('userScoresTitle').textContent = `🏆 ${username}`;
+    document.getElementById('userScoresModal').style.display = 'flex';
+    document.querySelectorAll('.userScoreModeTab').forEach(btn => {
+      const active = btn.dataset.mode === 'classic';
+      btn.style.background = active ? '#FFE9C7' : 'transparent';
+      btn.style.color = active ? '#3a2b22' : 'rgba(255,255,255,0.7)';
+      btn.style.border = active ? 'none' : '2px solid rgba(255,255,255,0.3)';
+    });
+    loadUserScoreTab('classic');
+  }
+  window.closeUserScoresModal = function(){
+    document.getElementById('userScoresModal').style.display = 'none';
+  };
+
+  async function loadUserScoreTab(mode){
+    const list = document.getElementById('userScoresList');
+    list.innerHTML = `<p style="text-align:center;color:rgba(255,255,255,0.6);font-size:13px;margin-top:20px;">${L.yukleniyor}</p>`;
+    const scores = await fetchTopScoresForUser(currentScoreModalUserId, mode);
+    if(scores.length === 0){
+      list.innerHTML = `<p style="text-align:center;color:rgba(255,255,255,0.6);font-size:13px;margin-top:20px;">${L.henuzSkorYok}</p>`;
+      return;
+    }
+    list.innerHTML = scores.map((s, i) => {
+      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+      return `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;margin-bottom:6px;
+        background:${i===0?'rgba(255,215,0,0.2)':i===1?'rgba(192,192,192,0.15)':i===2?'rgba(205,127,50,0.15)':'rgba(255,255,255,0.06)'};
+        border-radius:12px;border:1px solid rgba(255,255,255,0.08);">
+        <span style="font-size:1.1rem;width:24px;text-align:center;">${medal}</span>
+        <span style="flex:1;color:#FFE9C7;font-weight:800;font-size:1rem;">${s.score}</span>
+        <span style="color:rgba(255,255,255,0.4);font-size:0.7rem;">${s.date || ''}</span>
+      </div>`;
+    }).join('');
+  }
+
+  document.querySelectorAll('.userScoreModeTab').forEach(btn => {
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.userScoreModeTab').forEach(b => {
+        const active = b === this;
+        b.style.background = active ? '#FFE9C7' : 'transparent';
+        b.style.color = active ? '#3a2b22' : 'rgba(255,255,255,0.7)';
+        b.style.border = active ? 'none' : '2px solid rgba(255,255,255,0.3)';
+      });
+      loadUserScoreTab(this.dataset.mode);
+    });
+  });
+
+  document.getElementById('ppOpenScoresBtn').addEventListener('click', function(){
+    if(lastProfileUserId) openUserScoresModal(lastProfileUserId, lastProfileUsername);
+  });
+
+  function showBadgeDetail(b, earned){
+    document.getElementById('bdEmoji').textContent = b.emoji;
+    document.getElementById('bdName').textContent = L[b.name];
+    document.getElementById('bdDesc').textContent = L[b.desc];
+    const status = document.getElementById('bdStatus');
+    status.textContent = earned ? ('✅ ' + L.rozetKazanildi) : ('🔒 ' + L.rozetKilitli);
+    status.style.color = earned ? '#4CAF50' : '#8D6E63';
+    document.getElementById('badgeDetailModal').style.display = 'flex';
+  }
+  window.closeBadgeDetailModal = function(){
+    document.getElementById('badgeDetailModal').style.display = 'none';
+  };
+
   function renderBadgesGrid(stats){
     const grid = document.getElementById('ppBadgesGrid');
     grid.innerHTML = '';
     BADGES.forEach(b => {
       const earned = b.check(stats);
       const cell = document.createElement('div');
-      cell.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;';
+      cell.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:3px;flex:0 0 44px;width:44px;cursor:pointer;';
       const circle = document.createElement('div');
-      circle.style.cssText = `width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;background:${earned ? '#FFE9C7' : '#f0e2cc'};opacity:${earned ? '1' : '0.35'};border:2px solid ${earned ? '#FFB74D' : '#e0c9a6'};`;
+      circle.style.cssText = `width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;background:${earned ? '#FFE9C7' : '#f0e2cc'};opacity:${earned ? '1' : '0.35'};border:2px solid ${earned ? '#FFB74D' : '#e0c9a6'};`;
       circle.textContent = b.emoji;
       const label = document.createElement('span');
-      label.style.cssText = `font-size:9px;text-align:center;color:${earned ? '#4E342E' : '#b0a08a'};font-weight:700;line-height:1.2;`;
+      label.style.cssText = `font-size:8px;text-align:center;color:${earned ? '#4E342E' : '#b0a08a'};font-weight:700;line-height:1.15;`;
       label.textContent = L[b.name];
       cell.appendChild(circle);
       cell.appendChild(label);
       cell.title = L[b.desc];
+      cell.addEventListener('click', () => {
+        showBadgeDetail(b, earned);
+      });
       grid.appendChild(cell);
     });
   }
@@ -2953,7 +3912,10 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     document.getElementById('ppLevelText').textContent = '';
     document.getElementById('ppXpText').textContent = '';
     document.getElementById('ppBadgesGrid').innerHTML = '';
+    document.getElementById('loginProfileEmail').textContent = '';
     document.getElementById('ppSelfSection').style.display = isSelf ? 'block' : 'none';
+    document.getElementById('ppSelfTopSection').style.display = isSelf ? 'block' : 'none';
+    document.getElementById('editUsernameBtn').style.display = isSelf ? 'flex' : 'none';
     if(isSelf){
       const session = getAuthSession();
       if(session){
@@ -2964,22 +3926,27 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     }
     const stats = await fetchUserStats(userId);
     const levelInfo = computeLevelInfo(stats.totalXp);
+    lastProfileStats = stats; // "Tüm Rozetler" ekranı bunu kullanacak
+    lastProfileUserId = userId;
+    lastProfileUsername = stats.username;
 
     document.getElementById('ppUsername').textContent = stats.username;
-    const photoUrl = stats.friendPhoto || stats.avatarUrl;
+    const photoUrl = stats.avatarUrl; // Tepedeki büyük foto her zaman genel (Google) foto — arkadaşa özel foto sadece küçük kutuda
     const img = document.getElementById('ppAvatarImg');
     const fallback = document.getElementById('ppAvatarFallback');
     if(photoUrl){ img.src = photoUrl; img.style.display = 'block'; fallback.style.display = 'none'; }
     else { img.style.display = 'none'; fallback.style.display = 'block'; }
 
     document.getElementById('ppLevelText').textContent = `⭐ ${L.seviye} ${levelInfo.level}`;
-    document.getElementById('ppXpText').textContent = `${levelInfo.xp} / ${levelInfo.nextLevelXp} XP`;
+    document.getElementById('ppXpText').textContent = `${levelInfo.xp - levelInfo.currentLevelXp} / ${levelInfo.nextLevelXp - levelInfo.currentLevelXp} XP`;
     document.getElementById('ppLevelBar').style.width = (levelInfo.progress * 100) + '%';
 
     renderBadgesGrid(stats);
 
     document.getElementById('ppStatHighValue').textContent = stats.highestScore;
     document.getElementById('ppStatGamesValue').textContent = stats.gamesPlayed;
+    const earnedBadgeCount = BADGES.filter(b => b.check(stats)).length;
+    document.getElementById('ppStatBadgesValue').textContent = `${earnedBadgeCount} / ${BADGES.length}`;
     document.getElementById('ppStatSinceValue').textContent = stats.memberSince
       ? new Date(stats.memberSince).toLocaleDateString(aktifDil === 'en' ? 'en-US' : 'tr-TR', { year: 'numeric', month: 'short' })
       : '—';
@@ -3129,6 +4096,14 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     }
   }
 
+  document.getElementById('ppBadgesGrid').addEventListener('wheel', function(e){
+    if(e.deltaY === 0) return;
+    e.preventDefault();
+    this.scrollLeft += e.deltaY;
+  }, { passive: false });
+
+  document.getElementById('ppBadgesScrollBtn').addEventListener('click', openAllBadgesModal);
+
   document.getElementById('menuLoginBtn').addEventListener('click', openMyProfileOrLogin);
   document.getElementById('closeLoginModal').addEventListener('click', closeLoginModalFn);
   document.getElementById('loginSubmitBtn').addEventListener('click', doAuth);
@@ -3220,6 +4195,8 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     if(result.ok){
       msg.style.color = '#4CAF50';
       msg.textContent = L.kullaniciAdiKaydedildi;
+      const ppUsernameEl = document.getElementById('ppUsername');
+      if(ppUsernameEl) ppUsernameEl.textContent = result.value;
       renderUsernameSection();
       refreshSaveScoreUI();
       updateLoginUI();
@@ -3299,6 +4276,8 @@ document.getElementById('restartBtn').addEventListener('click', function() {
   updateLoginUI();
 
   let activeTab = 'alltime';
+  let activeTimeTab = 'alltime'; // Zaman Modu'nun kendi tarih aralığı seçimi (Klasik'ten bağımsız)
+  let activeGrowingTab = 'alltime'; // Büyüyen Kavanoz'un kendi tarih aralığı seçimi
   let cachedScores = null;
   let friendsScoresCache = {};
   let cachedFriendIds = null; // kabul edilmiş arkadaş + kendi id'lerim (giriş yapılmışsa)
@@ -3307,6 +4286,49 @@ document.getElementById('restartBtn').addEventListener('click', function() {
   function todayStr(){
     return new Date().toISOString().slice(0, 10); // "2026-06-28"
   }
+
+  // Haftalık lig: ISO hafta mantığı, Pazartesi 00:00 UTC'de başlar — günlük sıfırlama ile
+  // aynı felsefe (dünya genelinde tek, sabit bir referans an; kimsenin yerel saatine bağlı değil).
+  function weekStartStr(){
+    const now = new Date();
+    const utcDay = now.getUTCDay(); // 0=Pazar, 1=Pazartesi, ... 6=Cumartesi
+    const diffToMonday = (utcDay === 0) ? 6 : utcDay - 1;
+    const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - diffToMonday, 0, 0, 0, 0));
+    return monday.toISOString().slice(0, 10);
+  }
+
+  // Sunucu sorgularında kullanılan tarih filtresi param'ı — switchTab, loadTimeLeaderboard
+  // ve showMyRank aynı mantığı paylaşır (tek yerde tanımlı, üçü de tutarlı çalışır).
+  function dateFilterParam(tab){
+    if(tab === 'daily') return `&date=eq.${encodeURIComponent(todayStr())}`;
+    if(tab === 'week') return `&date=gte.${encodeURIComponent(weekStartStr())}`;
+    return '';
+  }
+
+  // ---------- Günün Denemesi Sayacı ----------
+  // Sıfırlanma UTC 00:00'da — dünyanın her yerinde herkes için TEK ve sabit bir an
+  // (İstanbul'da gece 03:00'a denk gelir). Sayaç bu ana kalan süreyi gösterir.
+  function msUntilDailyReset(){
+    const now = new Date();
+    const nextUTCMidnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0);
+    return nextUTCMidnight - now.getTime();
+  }
+  function formatCountdown(ms){
+    const total = Math.max(0, Math.floor(ms / 1000));
+    const h = String(Math.floor(total / 3600)).padStart(2, '0');
+    const m = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
+    const s = String(total % 60).padStart(2, '0');
+    return h + ':' + m + ':' + s;
+  }
+  function updateDailyCountdowns(){
+    const txt = '⏳ ' + formatCountdown(msUntilDailyReset());
+    const el1 = document.getElementById('menuDailyCountdown');
+    if(el1) el1.textContent = txt;
+    const el2 = document.getElementById('dailyChCountdown');
+    if(el2) el2.textContent = txt;
+  }
+  updateDailyCountdowns();
+  setInterval(updateDailyCountdowns, 1000);
 
   // ---------- Arkadaşlar (istek/kabul modeli, Supabase friends tablosu) ----------
   // Tablo: friends(id, requester_id, addressee_id, status['pending'|'accepted'], created_at, updated_at)
@@ -3389,10 +4411,12 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     const trimmed = username.trim();
     if(!trimmed) return { ok:false, msg: L.alanlarBos };
     try {
-      const res = await authorizedFetch(`${SUPABASE_URL}/rest/v1/profiles?select=user_id,username&username=eq.${encodeURIComponent(trimmed)}`, {});
+      // Büyük/küçük harf duyarsız arama ("ahmet" yazınca "Ahmet" de bulunur).
+      // Eski kayıtlarda "Ahmet" ve "ahmet" ikisi birden varsa birebir yazılana öncelik verilir.
+      const res = await authorizedFetch(`${SUPABASE_URL}/rest/v1/profiles?select=user_id,username&username=ilike.${encodeURIComponent(ilikeEscape(trimmed))}`, {});
       const data = await res.json();
       if(!data || data.length === 0) return { ok:false, msg: L.arkadasBulunamadi };
-      const target = data[0];
+      const target = data.find(r => r.username === trimmed) || data[0];
       if(target.user_id === session.user.id) return { ok:false, msg: L.kendiniEkleyemezsin };
 
       // Aramızda (hangi yönde olursa olsun) zaten bir kayıt var mı? Önce onu kontrol edelim
@@ -3548,13 +4572,19 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     }
     list.innerHTML = '';
     friends.forEach(f => {
+      const viewBtn = makeSmallBtn('👁', '#5C6BC0');
+      viewBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openPublicProfileModal(f.user_id);
+      });
       const removeBtn = makeSmallBtn('🗑', '#e8425b');
-      removeBtn.addEventListener('click', async () => {
+      removeBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
         removeBtn.disabled = true;
         await removeFriendRelation(f.user_id);
         renderFriendsList();
       });
-      list.appendChild(makeFriendRow({ photoUrl: f.friend_photo || f.avatar_url, name: f.username, subLabel: null, actions: [removeBtn], onClick: () => openPublicProfileModal(f.user_id) }));
+      list.appendChild(makeFriendRow({ photoUrl: f.friend_photo || f.avatar_url, name: f.username, subLabel: null, actions: [viewBtn, removeBtn], onClick: () => openPublicProfileModal(f.user_id) }));
     });
     outgoing.forEach(o => {
       const cancelBtn = makeSmallBtn('🗑', '#8D6E63');
@@ -3620,10 +4650,8 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     if(!generalBtn || !friendsBtn) return;
     generalBtn.style.background = !friendsModeOn ? '#FFE9C7' : 'transparent';
     generalBtn.style.color = !friendsModeOn ? '#3a2b22' : 'rgba(255,255,255,0.7)';
-    generalBtn.style.border = !friendsModeOn ? 'none' : '2px solid rgba(255,255,255,0.3)';
     friendsBtn.style.background = friendsModeOn ? '#4CAF50' : 'transparent';
     friendsBtn.style.color = friendsModeOn ? '#fff' : 'rgba(255,255,255,0.7)';
-    friendsBtn.style.border = friendsModeOn ? 'none' : '2px solid rgba(255,255,255,0.3)';
   }
 
   window.setLeaderboardScope = async function(wantsFriends){
@@ -3638,6 +4666,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     friendsModeOn = wantsFriends;
     updateFriendsToggleUI();
     if(activeMode === 'classic') switchTab(activeTab);
+    else if(activeMode === 'daily_ch') switchDailyChTab();
     else switchTimeTab(activeTimeSeconds);
   };
 
@@ -3666,7 +4695,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
       body: JSON.stringify({
         name: name.trim().slice(0, 20),
         score: pts,
-        mode: timeMode ? `time_${activeTimeSeconds === 60 ? '1min' : activeTimeSeconds === 180 ? '3min' : '5min'}` : 'classic',
+        mode: dailyMode ? 'daily_ch' : timeMode ? `time_${activeTimeSeconds === 60 ? '1min' : activeTimeSeconds === 180 ? '3min' : '5min'}` : growingMode ? 'growing' : 'classic',
         date: todayStr(),
         user_id: (session && session.user && session.user.id) || null
       })
@@ -3675,43 +4704,128 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     friendsScoresCache = {}; // arkadaş skor cache'ini de temizle
   }
 
-  function renderLeaderboard(scores, avatarMap){
+  function renderLeaderboard(scores, profileMap){
     const list = document.getElementById('leaderboardList');
-    avatarMap = avatarMap || {};
+    profileMap = profileMap || {};
     if(!scores || scores.length === 0){
       list.innerHTML = '<p style="color:rgba(255,255,255,0.6);text-align:center;margin-top:20px;">Henüz skor yok!<br><span style="font-size:1.5rem">🎯</span></p>';
       return;
     }
+    const mySession = getAuthSession();
+    const myId = mySession ? mySession.user.id : null;
     list.innerHTML = scores.map((s,i) => {
-      const photoUrl = s.user_id ? avatarMap[s.user_id] : null;
+      if(s.isGap){
+        // İlk 10 ile senin komşu satırların arasında gerçek bir boşluk olduğunu gösteren dar işaret
+        return '<div style="text-align:center;color:rgba(255,255,255,0.4);font-weight:800;margin:2px 0;font-size:1.3rem;line-height:1;padding:2px 0;">⋮</div>';
+      }
+      const rankNum = s.trueRank || (i + 1); // komşu satırlarda dizideki konum değil GERÇEK sıra gösterilir
+      const profile = s.user_id ? profileMap[s.user_id] : null;
+      const photoUrl = profile ? profile.photo : null;
+      const displayName = (profile && profile.username) ? profile.username : s.name; // girişliyse canlı kullanıcı adı, değilse kayıtlı isim
+      const isMe = myId && s.user_id === myId; // kendi satırın vurgulanır
       const avatarHtml = photoUrl
         ? `<img src="${photoUrl}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
         : `<span style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.15);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;">👤</span>`;
       return `
       <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:4px;
-        background:${i===0?'rgba(255,215,0,0.2)':i===1?'rgba(192,192,192,0.15)':i===2?'rgba(205,127,50,0.15)':'rgba(255,255,255,0.06)'};
-        border-radius:10px;border:1px solid rgba(255,255,255,0.08);">
-        <span style="font-size:1rem;width:20px;text-align:center;">${i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`}</span>
+        background:${isMe?'rgba(255,140,60,0.30)':rankNum===1?'rgba(255,215,0,0.2)':rankNum===2?'rgba(192,192,192,0.15)':rankNum===3?'rgba(205,127,50,0.15)':'rgba(255,255,255,0.06)'};
+        border-radius:10px;border:1px solid ${isMe?'rgba(255,170,80,0.85)':'rgba(255,255,255,0.08)'};">
+        <span style="font-size:1rem;width:20px;text-align:center;">${rankNum===1?'🥇':rankNum===2?'🥈':rankNum===3?'🥉':`${rankNum}.`}</span>
         ${avatarHtml}
-        <span style="flex:1;color:#fff;font-weight:700;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.name}</span>
+        <span style="flex:1;color:#fff;font-weight:700;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${displayName}${isMe?` <span style="opacity:0.75;font-size:0.68rem;font-weight:800;color:#FFD9A0;">(${L.sen})</span>`:''}</span>
         <span style="color:#FFE9C7;font-weight:800;font-size:0.85rem;">${s.score}</span>
         <span style="color:rgba(255,255,255,0.4);font-size:0.68rem;white-space:nowrap;">${s.date||''}</span>
       </div>`;
     }).join('');
   }
 
+  // Girişli kullanıcının o moddaki sırasını hesaplar ve skor tablosunun üstünde gösterir.
+  // 2 hafif sorgu: (1) kullanıcının en iyi skoru, (2) ondan yüksek kaç skor var (sadece sayı,
+  // Content-Range başlığından okunuyor, satır verisi inmiyor). Misafirdeyken gizli kalır.
+  let rankRequestId = 0; // hızlı sekme değişiminde eski cevabın ekranı ezmesini önler
+  async function showMyRank(modeKey, dateTab, topScores){
+    const bar = document.getElementById('myRankBar');
+    bar.style.display = 'none';
+    const session = getAuthSession();
+    if(!session) return;
+    const reqId = ++rankRequestId;
+    try {
+      const dateFilter = dateFilterParam(dateTab);
+      const bestRes = await fetch(`${SUPABASE_URL}/rest/v1/scores?select=*&user_id=eq.${session.user.id}&mode=eq.${modeKey}&order=score.desc&limit=1${dateFilter}`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      const bestRows = await bestRes.json();
+      if(reqId !== rankRequestId) return;
+      if(!Array.isArray(bestRows) || bestRows.length === 0) return; // bu modda skoru yok
+      const myRow = bestRows[0];
+      const best = myRow.score;
+      const cntRes = await fetch(`${SUPABASE_URL}/rest/v1/scores?select=id&mode=eq.${modeKey}&score=gt.${best}${dateFilter}`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Prefer': 'count=exact', 'Range': '0-0' }
+      });
+      const cr = cntRes.headers.get('content-range') || '';
+      const total = parseInt(cr.split('/')[1], 10);
+      if(reqId !== rankRequestId || isNaN(total)) return;
+      const rank = total + 1;
+      bar.innerHTML = `🏅 ${L.siran}: <b>#${rank}</b> &nbsp;·&nbsp; ${L.enIyiKisa}: <b>${best}</b>`;
+
+      // İlk 10'un dışındaysan (ve elimizde ilk-10 listesi varsa) genişletilmiş görünüm çiziyoruz.
+      // İki durum var: (a) 11./12. sıradaysan gerçek bir boşluk yok, direkt uzatırız — komşu
+      // sorgusu yerine tek bir "10.'dan itibaren" sorgusu yeter, mükerrer satır çıkmaz.
+      // (b) 12'den sonraysan gerçek boşluk var, "üstte 2 · sen · altta 2" + "⋮" gösterilir.
+      if(rank > 10 && Array.isArray(topScores) && topScores.length >= 10){
+        const tenthScore = topScores[9].score;
+        if(rank <= 12){
+          // combined = topScores'un ilk 9'u + bu "extra" sorgusu; toplamda tam rank+2 satır
+          // olması için extra'nın limiti (rank+2)-9 olmalı, yoksa fazla satır çekilip gösterilir.
+          const extraLimit = (rank + 2) - 9;
+          const extraRes = await fetch(`${SUPABASE_URL}/rest/v1/scores?select=*&mode=eq.${modeKey}&score=lte.${tenthScore}${dateFilter}&order=score.desc&limit=${extraLimit}`, {
+            headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+          });
+          if(reqId !== rankRequestId) return;
+          const extra = await extraRes.json(); // 10. sıradan (dahil) itibaren tazesi, rank+2'ye kadar
+          const combined = topScores.slice(0, 9).concat(extra); // ilk 9 + taze 10.-... => çakışma yok
+          const avatarMap2 = await fetchAvatarMapForScores(combined, 'general');
+          renderLeaderboard(combined, avatarMap2);
+        } else {
+          const [aboveRes, belowRes] = await Promise.all([
+            fetch(`${SUPABASE_URL}/rest/v1/scores?select=*&mode=eq.${modeKey}&score=gt.${best}${dateFilter}&order=score.asc&limit=2`, {
+              headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+            }),
+            fetch(`${SUPABASE_URL}/rest/v1/scores?select=*&mode=eq.${modeKey}&score=lt.${best}${dateFilter}&order=score.desc&limit=2`, {
+              headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+            })
+          ]);
+          if(reqId !== rankRequestId) return;
+          const above = (await aboveRes.json()).reverse(); // en yakın üst en altta kalacak şekilde ters çevir
+          const below = await belowRes.json();
+          const combined = topScores.slice(0, 10);
+          combined.push({ isGap: true });
+          above.forEach(function(e, idx){ combined.push(Object.assign({}, e, { trueRank: rank - above.length + idx })); });
+          combined.push(Object.assign({}, myRow, { trueRank: rank }));
+          below.forEach(function(e, idx){ combined.push(Object.assign({}, e, { trueRank: rank + 1 + idx })); });
+          const avatarMap2 = await fetchAvatarMapForScores(combined.filter(function(s){ return !s.isGap; }), 'general');
+          renderLeaderboard(combined, avatarMap2);
+        }
+      }
+      bar.style.cssText = 'display:block;width:100%;max-width:320px;margin:0 auto 8px;padding:8px 12px;border-radius:10px;background:rgba(255,215,0,0.14);border:1px solid rgba(255,215,0,0.35);color:#FFE9C7;font-weight:700;font-size:0.85rem;text-align:center;';
+    } catch(e){}
+  }
+
   async function fetchAvatarMapForScores(scores, scope){
     const ids = [...new Set(scores.map(s => s.user_id).filter(Boolean))];
     if(ids.length === 0) return {};
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=user_id,avatar_url,friend_photo&user_id=in.(${ids.join(',')})`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=user_id,username,avatar_url,friend_photo&user_id=in.(${ids.join(',')})`, {
         headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
       });
       const rows = await res.json();
       const map = {};
       if(Array.isArray(rows)){
         rows.forEach(r => {
-          map[r.user_id] = scope === 'friends' ? (r.friend_photo || r.avatar_url) : r.avatar_url;
+          map[r.user_id] = {
+            photo: scope === 'friends' ? (r.friend_photo || r.avatar_url) : r.avatar_url,
+            username: r.username || null
+          };
         });
       }
       return map;
@@ -3723,22 +4837,66 @@ document.getElementById('restartBtn').addEventListener('click', function() {
   let activeMode = 'classic';
   let activeTimeSeconds = 60;
 
+  let activeDailyChTab = 'today';
+
   window.switchMode = function(mode) {
     activeMode = mode;
-    const isClassic = mode === 'classic';
-    document.getElementById('classicTabs').style.display = isClassic ? 'flex' : 'none';
-    document.getElementById('timeTabs').style.display = isClassic ? 'none' : 'flex';
-    document.getElementById('modeClassicBtn').style.background = isClassic ? '#FF7043' : 'transparent';
-    document.getElementById('modeClassicBtn').style.color = isClassic ? '#fff' : 'rgba(255,255,255,0.7)';
-    document.getElementById('modeClassicBtn').style.border = isClassic ? 'none' : '2px solid rgba(255,255,255,0.3)';
-    document.getElementById('modeTimeBtn').style.background = isClassic ? 'transparent' : '#5C6BC0';
-    document.getElementById('modeTimeBtn').style.color = isClassic ? 'rgba(255,255,255,0.7)' : '#fff';
-    document.getElementById('modeTimeBtn').style.border = isClassic ? '2px solid rgba(255,255,255,0.3)' : 'none';
-    if(isClassic) {
-      switchTab(activeTab);
-    } else {
-      activeTimeSeconds = 60;
+    // Sekme grupları
+    document.getElementById('classicTabs').style.display = mode === 'classic' ? 'flex' : 'none';
+    document.getElementById('timeTabs').style.display = mode === 'time' ? 'flex' : 'none';
+    document.getElementById('timeDateTabs').style.display = mode === 'time' ? 'flex' : 'none';
+    document.getElementById('growingTabs').style.display = mode === 'growing' ? 'flex' : 'none';
+    document.getElementById('dailyChTabs').style.display = mode === 'daily_ch' ? 'flex' : 'none';
+    // Mod butonu stilleri (aktifin rengi kendine özgü)
+    [['modeClassicBtn','classic','#FF7043'],['modeTimeBtn','time','#5C6BC0'],['modeGrowingBtn','growing','#8E24AA'],['modeDailyChBtn','daily_ch','#00897B']].forEach(function(m){
+      const btn = document.getElementById(m[0]);
+      const on = mode === m[1];
+      btn.style.background = on ? m[2] : 'transparent';
+      btn.style.color = on ? '#fff' : 'rgba(255,255,255,0.7)';
+    });
+    if(mode === 'classic') switchTab(activeTab);
+    else if(mode === 'time'){
+      activeTimeSeconds = 60; activeTimeTab = 'alltime';
+      highlightSegTrio('timeAllTimeTab', 'timeWeekTab', 'timeTodayTab', 'alltime');
       switchTimeTab(60);
+    }
+    else if(mode === 'growing'){
+      activeGrowingTab = 'alltime';
+      highlightSegTrio('growingAllTimeTab', 'growingWeekTab', 'growingTodayTab', 'alltime');
+      loadGrowingLeaderboard();
+    }
+    else switchDailyChTab();
+  };
+
+  // Günün Denemesi tablosu: her zaman sadece bugünün yarışı
+  window.switchDailyChTab = async function(){
+    document.getElementById('dailyChDate').textContent = todayStr();
+    const list = document.getElementById('leaderboardList');
+    list.innerHTML = `<p style="color:rgba(255,255,255,0.6);text-align:center;margin-top:20px;">${L.yukleniyor}</p>`;
+    try {
+      const dateFilter = dateFilterParam('daily');
+      if(friendsModeOn){
+        document.getElementById('myRankBar').style.display = 'none';
+        let scores = await fetchFriendsScores('daily_ch');
+        scores = scores.filter(function(sc){ return sc.date === todayStr(); });
+        if(scores.length === 0){
+          list.innerHTML = `<p style="color:rgba(255,255,255,0.6);text-align:center;margin-top:20px;">${L.hicArkadasSkoruYok}</p>`;
+        } else {
+          const sliced = scores.slice(0, 20);
+          const avatarMap = await fetchAvatarMapForScores(sliced, 'friends');
+          renderLeaderboard(sliced, avatarMap);
+        }
+        return;
+      }
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/scores?select=*&mode=eq.daily_ch${dateFilter}&order=score.desc&limit=20`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      const scores = await res.json();
+      const avatarMap = await fetchAvatarMapForScores(scores, 'general');
+      renderLeaderboard(scores, avatarMap);
+      showMyRank('daily_ch', 'daily', scores);
+    } catch(e) {
+      list.innerHTML = `<p style="color:#e8425b;text-align:center;">${L.baglantiHatasi}</p>`;
     }
   };
 
@@ -3748,15 +4906,27 @@ document.getElementById('restartBtn').addEventListener('click', function() {
       const btn = document.getElementById(`time${s}Tab`);
       btn.style.background = s === seconds ? '#FFE9C7' : 'transparent';
       btn.style.color = s === seconds ? '#3a2b22' : 'rgba(255,255,255,0.7)';
-      btn.style.border = s === seconds ? 'none' : '2px solid rgba(255,255,255,0.3)';
     });
+    await loadTimeLeaderboard();
+  };
+
+  window.switchTimeDateTab = async function(tab){
+    activeTimeTab = tab;
+    highlightSegTrio('timeAllTimeTab', 'timeWeekTab', 'timeTodayTab', tab);
+    await loadTimeLeaderboard();
+  };
+
+  // Zaman Modu skor tablosu: seçili süre kategorisi (1/3/5 dk) + seçili tarih aralığını
+  // (Tüm Zamanlar/Bu Hafta/Bugün) birlikte uygular. Her iki sekme grubu da bunu çağırır.
+  async function loadTimeLeaderboard(){
     const list = document.getElementById('leaderboardList');
     list.innerHTML = `<p style="color:rgba(255,255,255,0.6);text-align:center;margin-top:20px;">${L.yukleniyor}</p>`;
     try {
-      const duration = seconds === 60 ? '1min' : seconds === 180 ? '3min' : '5min';
+      const duration = activeTimeSeconds === 60 ? '1min' : activeTimeSeconds === 180 ? '3min' : '5min';
       const modeKey = `time_${duration}`;
       if(friendsModeOn){
-        const scores = await fetchFriendsScores(modeKey);
+        document.getElementById('myRankBar').style.display = 'none';
+        const scores = filterScoresByRange(await fetchFriendsScores(modeKey), activeTimeTab);
         if(scores.length === 0){
           list.innerHTML = `<p style="color:rgba(255,255,255,0.6);text-align:center;margin-top:20px;">${L.hicArkadasSkoruYok}</p>`;
         } else {
@@ -3766,27 +4936,78 @@ document.getElementById('restartBtn').addEventListener('click', function() {
         }
         return;
       }
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/scores?select=*&mode=eq.${modeKey}&order=score.desc&limit=20`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/scores?select=*&mode=eq.${modeKey}${dateFilterParam(activeTimeTab)}&order=score.desc&limit=20`, {
         headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
       });
       const scores = await res.json();
       const avatarMap = await fetchAvatarMapForScores(scores, 'general');
       renderLeaderboard(scores, avatarMap);
+      showMyRank(modeKey, activeTimeTab, scores); // artık Bu Hafta'da da "Sıran" bandı çalışıyor
     } catch(e) {
       list.innerHTML = `<p style="color:#e8425b;text-align:center;">${L.baglantiHatasi}</p>`;
     }
+  }
+
+  window.switchGrowingDateTab = async function(tab){
+    activeGrowingTab = tab;
+    highlightSegTrio('growingAllTimeTab', 'growingWeekTab', 'growingTodayTab', tab);
+    await loadGrowingLeaderboard();
   };
+
+  // Büyüyen Kavanoz skor tablosu: süre kategorisi yok (Zaman Modu'nun aksine), sadece
+  // tarih aralığı var — mantık loadTimeLeaderboard ile neredeyse aynı, mode='growing' sabit.
+  async function loadGrowingLeaderboard(){
+    const list = document.getElementById('leaderboardList');
+    list.innerHTML = `<p style="color:rgba(255,255,255,0.6);text-align:center;margin-top:20px;">${L.yukleniyor}</p>`;
+    try {
+      if(friendsModeOn){
+        document.getElementById('myRankBar').style.display = 'none';
+        const scores = filterScoresByRange(await fetchFriendsScores('growing'), activeGrowingTab);
+        if(scores.length === 0){
+          list.innerHTML = `<p style="color:rgba(255,255,255,0.6);text-align:center;margin-top:20px;">${L.hicArkadasSkoruYok}</p>`;
+        } else {
+          const sliced = scores.slice(0,20);
+          const avatarMap = await fetchAvatarMapForScores(sliced, 'friends');
+          renderLeaderboard(sliced, avatarMap);
+        }
+        return;
+      }
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/scores?select=*&mode=eq.growing${dateFilterParam(activeGrowingTab)}&order=score.desc&limit=20`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      const scores = await res.json();
+      const avatarMap = await fetchAvatarMapForScores(scores, 'general');
+      renderLeaderboard(scores, avatarMap);
+      showMyRank('growing', activeGrowingTab, scores);
+    } catch(e) {
+      list.innerHTML = `<p style="color:#e8425b;text-align:center;">${L.baglantiHatasi}</p>`;
+    }
+  }
+
+  // Ortak yardımcı: 3'lü segmented control'de aktif butonu vurgular (Tüm Zamanlar/Bu Hafta/Bugün)
+  function highlightSegTrio(allBtnId, weekBtnId, todayBtnId, activeVal){
+    [[allBtnId,'alltime'],[weekBtnId,'week'],[todayBtnId,'daily']].forEach(function(pair){
+      const btn = document.getElementById(pair[0]);
+      const on = activeVal === pair[1];
+      btn.style.background = on ? '#FFE9C7' : 'transparent';
+      btn.style.color = on ? '#3a2b22' : 'rgba(255,255,255,0.7)';
+    });
+  }
+
+  // date filtresine göre bir skor listesini süzer: 'alltime' hepsi, 'week' bu haftanın
+  // Pazartesi'sinden itibaren, 'daily' sadece bugün (ISO YYYY-MM-DD string karşılaştırması yeterli)
+  function filterScoresByRange(scores, tab){
+    if(tab === 'daily') return scores.filter(function(s){ return s.date === todayStr(); });
+    if(tab === 'week'){ const ws = weekStartStr(); return scores.filter(function(s){ return s.date >= ws; }); }
+    return scores;
+  }
 
   window.switchTab = async function(tab){
     activeTab = tab;
-    document.getElementById('allTimeTab').style.background = tab==='alltime' ? '#FFE9C7' : 'transparent';
-    document.getElementById('allTimeTab').style.color = tab==='alltime' ? '#3a2b22' : 'rgba(255,255,255,0.7)';
-    document.getElementById('allTimeTab').style.border = tab==='alltime' ? 'none' : '2px solid rgba(255,255,255,0.3)';
-    document.getElementById('todayTab').style.background = tab==='daily' ? '#FFE9C7' : 'transparent';
-    document.getElementById('todayTab').style.color = tab==='daily' ? '#3a2b22' : 'rgba(255,255,255,0.7)';
-    document.getElementById('todayTab').style.border = tab==='daily' ? 'none' : '2px solid rgba(255,255,255,0.3)';
+    highlightSegTrio('allTimeTab', 'weekTab', 'todayTab', tab);
 
     if(friendsModeOn){
+      document.getElementById('myRankBar').style.display = 'none';
       const list = document.getElementById('leaderboardList');
       list.innerHTML = `<p style="color:rgba(255,255,255,0.6);text-align:center;margin-top:20px;">${L.yukleniyor}</p>`;
       const scores = await fetchFriendsScores('classic');
@@ -3794,16 +5015,37 @@ document.getElementById('restartBtn').addEventListener('click', function() {
         list.innerHTML = `<p style="color:rgba(255,255,255,0.6);text-align:center;margin-top:20px;">${L.hicArkadasSkoruYok}</p>`;
         return;
       }
-      const filteredScores = tab === 'daily' ? scores.filter(s => s.date === todayStr()).slice(0,10) : scores.slice(0,10);
+      const filteredScores = filterScoresByRange(scores, tab).slice(0,10);
       const friendsAvatarMap = await fetchAvatarMapForScores(filteredScores, 'friends');
       renderLeaderboard(filteredScores, friendsAvatarMap);
       return;
     }
 
-    if(!cachedScores) return;
-    const generalScores = tab === 'daily' ? cachedScores.filter(s => s.date === todayStr()).slice(0,10) : cachedScores.slice(0,10);
-    const generalAvatarMap = await fetchAvatarMapForScores(generalScores, 'general');
-    renderLeaderboard(generalScores, generalAvatarMap);
+    const list = document.getElementById('leaderboardList');
+    list.innerHTML = `<p style="color:rgba(255,255,255,0.6);text-align:center;margin-top:20px;">${L.yukleniyor}</p>`;
+    try {
+      if(tab === 'alltime'){
+        // Tüm Zamanlar: önbelleğe alınmış top-50 yeterli, burada zaten "en iyiler" listesi bu.
+        const scores = await fetchScores();
+        const generalScores = scores.slice(0, 10);
+        const generalAvatarMap = await fetchAvatarMapForScores(generalScores, 'general');
+        renderLeaderboard(generalScores, generalAvatarMap);
+        showMyRank('classic', 'alltime', generalScores);
+      } else {
+        // Bu Hafta / Bugün: ÖNEMLİ — top-50 önbelleğini süzmek yerine sunucudan doğrudan
+        // tarih filtreli sorgu atıyoruz. Aksi halde tüm-zamanlar ilk 50'sine hiç girmemiş
+        // ama bu hafta/bugün iyi oynayan biri listede hiç görünmezdi (gerçek bug, düzeltildi).
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/scores?select=*&mode=eq.classic${dateFilterParam(tab)}&order=score.desc&limit=20`, {
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+        });
+        const scores = await res.json();
+        const avatarMap = await fetchAvatarMapForScores(scores, 'general');
+        renderLeaderboard(scores, avatarMap);
+        showMyRank('classic', tab, scores); // artık Bu Hafta'da da "Sıran" bandı çalışıyor
+      }
+    } catch(e) {
+      list.innerHTML = `<p style="color:#e8425b;text-align:center;">${L.baglantiHatasi}</p>`;
+    }
   };
 
   async function openLeaderboard(){
@@ -3813,16 +5055,12 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     activeTab = 'alltime';
     friendsModeOn = false;
     updateFriendsToggleUI();
-    switchTab('alltime');
-    document.getElementById('leaderboardList').innerHTML =
-      `<p style="color:rgba(255,255,255,0.6);text-align:center;margin-top:20px;">${L.yukleniyor}</p>`;
-    try {
-      const scores = await fetchScores();
-      switchTab(activeTab);
-    } catch(e){
-      document.getElementById('leaderboardList').innerHTML =
-        `<p style="color:#e8425b;text-align:center;">${L.baglantiHatasi}</p>`;
-    }
+    document.getElementById('myRankBar').style.display = 'none';
+    // Skor tablosu artık her zaman o an oynadığın modun sekmesiyle açılır — Klasik'e sabit değil.
+    // switchMode zaten kendi moduna uygun veri çekme/render mantığını tetikliyor, ayrıca
+    // fetchScores()+switchTab() çağırmaya gerek yok (öncesinde mükerrer render oluyordu).
+    const currentMode = dailyMode ? 'daily_ch' : timeMode ? 'time' : growingMode ? 'growing' : 'classic';
+    window.switchMode(currentMode);
   }
 
   window.closeLeaderboard = function(){
@@ -3858,11 +5096,11 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     const btnSmall = document.getElementById('btnSmallJoker');
     const btnBig = document.getElementById('btnBigJoker');
 
-    btnSmall.textContent = `💣 (${smallJokers})`;
+    btnSmall.textContent = `⬆️ (${smallJokers})`;
     btnSmall.style.opacity = smallJokers > 0 ? '1' : '0.4';
     btnSmall.style.outline = activeJoker === 'small' ? '2px solid #fff' : 'none';
 
-    btnBig.textContent = `🧨 (${bigJokers})`;
+    btnBig.textContent = `📌 (${bigJokers})`;
     btnBig.style.opacity = bigJokers > 0 ? '1' : '0.4';
     btnBig.style.outline = activeJoker === 'big' ? '2px solid #fff' : 'none';
 
@@ -3883,6 +5121,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
   let shuffleUsed = false;
 
   document.getElementById('btnJokerPanel').addEventListener('click', () => {
+    updateAdBtns();
     document.getElementById('jokerPanel').style.display = 'flex';
     pauseGameNow();
   });
@@ -3901,6 +5140,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
 
   // Panel joker butonları
   document.getElementById('panelSmallJoker').addEventListener('click', () => {
+    if(tutorialActive) return; // eğitimde sırayla: önce İğne (Yükselt patlatmadığı için eğitime uymuyor)
     if(smallJokers <= 0) return;
     document.getElementById('jokerPanel').style.display = 'none';
     activeJoker = activeJoker === 'small' ? null : 'small';
@@ -3912,11 +5152,14 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     document.getElementById('jokerPanel').style.display = 'none';
     activeJoker = activeJoker === 'big' ? null : 'big';
     updateJokerUI();
+    if(activeJoker === 'big') tutorialOnEvent('bombSelected');
   });
 
   document.getElementById('panelShuffle').addEventListener('click', () => {
+    if(tutorialActive) return; // eğitimde sırayla: önce İğne
     if(shuffleUsed) return;
     shuffleUsed = true;
+    metaOnJokerUsed();
     document.getElementById('jokerPanel').style.display = 'none';
     gamePaused = false;
     // Karıştır: tüm topların hızını rastgele yönlere ver
@@ -3982,14 +5225,16 @@ document.getElementById('restartBtn').addEventListener('click', function() {
   })();
 
   // ---- Zaman Modu ----
-  let timeMode = false;
   let timeRemaining = 0;
   let timerInterval = null;
 
-  function startTimeMode(seconds) {
+  function startTimeMode(seconds, totalSeconds) {
     timeMode = true;
     timeRemaining = seconds;
-    activeTimeSeconds = seconds;
+    // totalSeconds verilmezse (yeni oyun başlangıcı) seconds ile aynıdır.
+    // Devam Et'te verilir: kalan süre ile seçilen 1/3/5 dk'lık kategori farklı olabilir,
+    // rekor karşılaştırması doğru kategoriye gitsin diye ayrı tutuluyor.
+    activeTimeSeconds = totalSeconds || seconds;
     updateTimerDisplay();
     document.getElementById('timerDisplay').style.display = 'block';
     document.getElementById('topAtBtn').style.display = 'none';
@@ -4037,16 +5282,45 @@ document.getElementById('restartBtn').addEventListener('click', function() {
       e.stopPropagation();
       const seconds = parseInt(this.dataset.seconds);
       document.getElementById('timeModeModal').style.display = 'none';
-      document.getElementById('mainMenu').style.display = 'none';
-      gamePaused = false;
-      resetGame();
-      startTimeMode(seconds);
+      startNewGameFlow(function(){
+        document.getElementById('mainMenu').style.display = 'none';
+        gamePaused = false;
+        growingMode = false;
+        document.getElementById('topAtBtn').style.display = '';
+        resetGame();
+        startTimeMode(seconds);
+        loadBest(); // artık timeMode+activeTimeSeconds doğru, bu sürenin kendi rekoru yüklenir
+        // resetGame() toplari Klasik Mod aralığından seçmişti (timeMode henüz false'tu),
+        // şimdi Zaman Modu doğru aralığıyla (Elma-Ananas) yeniden seçiyoruz.
+        if(dailyMode) exitDailyMode();
+        currentLevel = randomSpawnLevel();
+        nextLevel = randomSpawnLevel();
+        spawnWaitingBall();
+        applyBonusJokers();
+        maybeShowTutorial();
+      });
     });
   });
 
   // ---- Menü butonları ----
 
   checkSavedGame();
+
+  // Yeni oyun başlatma noktalarının (Klasik/Zaman/Deneme) hepsi buradan geçer.
+  // Kayıtlı bitmemiş bir oyun varsa önce onay ister ("silinecek, emin misin?");
+  // yoksa direkt başlatır. Böylece "Devam Et" dışındaki her giriş garantili resetGame() çağırır.
+  function startNewGameFlow(startFn){
+    let hasSaved = false;
+    try {
+      const raw = localStorage.getItem('ballbasket_gamestate');
+      if(raw){ const st = JSON.parse(raw); hasSaved = !!(st.balls && st.balls.length > 0); }
+    } catch(e){}
+    if(hasSaved){
+      showConfirmModal(startFn, L.devamEdenOyunBaslik, L.devamEdenOyunAlt);
+    } else {
+      startFn();
+    }
+  }
 
   document.getElementById('menuDevamBtn').addEventListener('click', function() {
     gamePaused = false;
@@ -4055,8 +5329,31 @@ document.getElementById('restartBtn').addEventListener('click', function() {
   });
 
   document.getElementById('menuClassicBtn').addEventListener('click', function() {
-    gamePaused = false;
-    document.getElementById('mainMenu').style.display = 'none';
+    startNewGameFlow(function(){
+      if(dailyMode) exitDailyMode(); // deneme kavanozu klasiğe taşınmasın
+      if(timeMode) stopTimeMode();
+      growingMode = false;
+      document.getElementById('topAtBtn').style.display = '';
+      document.getElementById('mainMenu').style.display = 'none';
+      resetGame(); // eksikti: Klasik Mod eskiden reset ATMADAN devam ediyordu — asıl hata buydu
+      loadBest(); // Klasik'in kendi rekoru (Zaman Modu'ndan farklı kategori)
+      gamePaused = false;
+      maybeShowTutorial();
+    });
+  });
+
+  document.getElementById('menuGrowingBtn').addEventListener('click', function() {
+    startNewGameFlow(function(){
+      if(dailyMode) exitDailyMode();
+      if(timeMode) stopTimeMode();
+      document.getElementById('mainMenu').style.display = 'none';
+      growingMode = true;
+      resetGame(); // growingMode=true olduğundan kavanoz dar başlar (jarUsesGrowth() içinde kontrol edilir)
+      document.getElementById('topAtBtn').style.display = 'none'; // bu modda yok
+      loadBest(); // Büyüyen Kavanoz'un kendi rekoru — Klasik/Zaman'dan tamamen ayrı kategori
+      gamePaused = false;
+      maybeShowTutorial();
+    });
   });
 
   document.getElementById('menuPhotosBtn').addEventListener('click', function() {
@@ -4397,7 +5694,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
       const count = parseInt(this.dataset.count);
       document.getElementById('topAtModal').style.display = 'none';
       gamePaused = false;
-      topAtUsed = false; // TEST BUILD: sınırsız — normale döndürmek için "false" yerine "true" yaz
+      topAtUsed = true; // gerçek davranış: oyun başına 1 kullanım
       updateTopAtBtn();
       let dropped = 0;
       const session = ++dropSession;
@@ -4441,22 +5738,783 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     document.getElementById('aboutModal').style.display = 'none';
   });
 
+  // ---------- Arka Plan Müziği (WebAudio, dosyasız/prosedürel) ----------
+  // Sıcak, sakin bir döngü: pad akorları + yumuşak bas + pentatonik melodi.
+  // Tamamen kod ile üretiliyor, mp3 gerekmiyor, APK boyutu artmıyor.
   let bgMusicTimer = null;
-  function startBgMusic() {}
-  function stopBgMusic() {}
+  let musicGainNode = null;
+  let musicNextBar = 0;
+  let musicBarIdx = 0;
+  let musicLastMel = 2;
 
+  const MUSIC_BAR = 2.4; // saniye (bar süresi)
+  // Cmaj7 → Am7 → Fmaj7 → G (frekanslar Hz)
+  const MUSIC_CHORDS = [
+    [261.63, 329.63, 392.00, 493.88],
+    [220.00, 261.63, 329.63, 392.00],
+    [174.61, 220.00, 261.63, 329.63],
+    [196.00, 246.94, 293.66, 392.00]
+  ];
+  const MUSIC_BASS = [65.41, 55.00, 43.65, 49.00]; // C2, A1, F1, G1
+  const MUSIC_PENTA = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50]; // C penta (üst oktav)
+
+  function musicScheduleBar(t, chordIdx){
+    const ctx = getCtx();
+    const out = musicGainNode;
+    if(!out) return;
+    // Pad (akor) — yumuşak giriş/çıkışlı üçgen dalgalar
+    MUSIC_CHORDS[chordIdx].forEach(function(freq){
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.016, t + 0.5);
+      g.gain.setValueAtTime(0.016, t + MUSIC_BAR - 0.5);
+      g.gain.linearRampToValueAtTime(0.0001, t + MUSIC_BAR);
+      osc.connect(g); g.connect(out);
+      osc.start(t); osc.stop(t + MUSIC_BAR + 0.05);
+    });
+    // Bas — bar başında ve ortasında iki yumuşak vuruş
+    [0, MUSIC_BAR/2].forEach(function(off){
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(MUSIC_BASS[chordIdx], t + off);
+      g.gain.setValueAtTime(0.0001, t + off);
+      g.gain.linearRampToValueAtTime(0.06, t + off + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.001, t + off + MUSIC_BAR/2 - 0.05);
+      osc.connect(g); g.connect(out);
+      osc.start(t + off); osc.stop(t + off + MUSIC_BAR/2);
+    });
+    // Melodi — her barda 4 slot, ~%55 ihtimalle tıngırtı (üretken, tekrara düşmez)
+    for(let i = 0; i < 4; i++){
+      if(Math.random() > 0.55) continue;
+      // komşu notalara meyilli, sıçramalar az → daha "şarkı" gibi
+      let step = Math.floor(Math.random()*3) - 1; // -1, 0, +1
+      if(Math.random() < 0.15) step = Math.floor(Math.random()*5) - 2;
+      musicLastMel = Math.max(0, Math.min(MUSIC_PENTA.length - 1, musicLastMel + step));
+      const nt = t + i * (MUSIC_BAR/4) + 0.02;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(MUSIC_PENTA[musicLastMel], nt);
+      g.gain.setValueAtTime(0.0001, nt);
+      g.gain.linearRampToValueAtTime(0.035, nt + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, nt + 0.55);
+      osc.connect(g); g.connect(out);
+      osc.start(nt); osc.stop(nt + 0.6);
+    }
+  }
+
+  function startBgMusic(){
+    if(!musicEnabled) return;
+    if(bgMusicTimer) return; // zaten çalıyor
+    try {
+      const ctx = getCtx();
+      musicGainNode = ctx.createGain();
+      musicGainNode.gain.setValueAtTime(0.0001, ctx.currentTime);
+      musicGainNode.gain.linearRampToValueAtTime(1.0, ctx.currentTime + 1.2); // yumuşak açılış
+      musicGainNode.connect(ctx.destination);
+      musicNextBar = ctx.currentTime + 0.1;
+      musicBarIdx = 0;
+      bgMusicTimer = setInterval(function(){
+        try {
+          const c = getCtx();
+          while(musicNextBar < c.currentTime + 0.8){
+            musicScheduleBar(musicNextBar, musicBarIdx % MUSIC_CHORDS.length);
+            musicNextBar += MUSIC_BAR;
+            musicBarIdx++;
+          }
+        } catch(e){}
+      }, 250);
+    } catch(e){}
+  }
+
+  function stopBgMusic(){
+    if(bgMusicTimer){ clearInterval(bgMusicTimer); bgMusicTimer = null; }
+    if(musicGainNode){
+      try {
+        const ctx = getCtx();
+        const g = musicGainNode;
+        g.gain.cancelScheduledValues(ctx.currentTime);
+        g.gain.setValueAtTime(g.gain.value, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 0.4); // yumuşak kapanış
+        setTimeout(function(){ try { g.disconnect(); } catch(e){} }, 500);
+      } catch(e){}
+      musicGainNode = null;
+    }
+  }
+
+  // Tarayıcı/WebView otomatik ses engeli: müzik ancak ilk dokunuştan sonra başlayabilir
   document.addEventListener('pointerdown', function onFirstTouch() {
     document.removeEventListener('pointerdown', onFirstTouch);
+    if(musicEnabled) startBgMusic();
   }, { once: true });
 
-  let soundEnabled = true;
+  // Ayarlar kalıcı: localStorage'dan oku (varsayılan: ikisi de açık)
+  let soundEnabled = localStorage.getItem('ballbasket_sound') !== '0';
+  let musicEnabled = localStorage.getItem('ballbasket_music') !== '0';
+
   const soundToggle = document.getElementById('soundToggle');
   const soundKnob = document.getElementById('soundToggleKnob');
-  soundToggle.addEventListener('click', function() {
-    soundEnabled = !soundEnabled;
+  const musicToggle = document.getElementById('musicToggle');
+  const musicKnob = document.getElementById('musicToggleKnob');
+
+  function refreshSoundToggles(){
     soundToggle.style.background = soundEnabled ? '#FF7043' : '#ccc';
     soundKnob.style.right = soundEnabled ? '3px' : '27px';
-    if(soundEnabled) startBgMusic(); else stopBgMusic();
+    musicToggle.style.background = musicEnabled ? '#FF7043' : '#ccc';
+    musicKnob.style.right = musicEnabled ? '3px' : '27px';
+  }
+  refreshSoundToggles();
+
+  soundToggle.addEventListener('click', function() {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem('ballbasket_sound', soundEnabled ? '1' : '0');
+    refreshSoundToggles();
+  });
+
+  musicToggle.addEventListener('click', function() {
+    musicEnabled = !musicEnabled;
+    localStorage.setItem('ballbasket_music', musicEnabled ? '1' : '0');
+    refreshSoundToggles();
+    if(musicEnabled) startBgMusic(); else stopBgMusic();
+  });
+
+  // ---------- Günlük Görevler, Rozetler ve Seri (retention sistemi) ----------
+  // Tamamen localStorage'da yaşar, sunucu/native değişikliği gerektirmez.
+  // Görev ödülü: bir sonraki oyunda +1 joker (bonusSmall/bonusBig birikip resetGame'de uygulanır).
+  function saveMeta(){ try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch(e){} }
+
+  function loadMeta(){
+    try { meta = JSON.parse(localStorage.getItem(META_KEY)) || {}; } catch(e){ meta = {}; }
+    meta.badges = meta.badges || {};
+    meta.totals = meta.totals || { games: 0, merges: 0 };
+    meta.bank = meta.bank || { small: 0, big: 0, shuffle: 0 };
+    const today = todayStr();
+    if(meta.lastDay !== today){ // seri hesabı: dün girdiyse +1, yoksa 1'e döner
+      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      meta.streak = (meta.lastDay === yesterday) ? (meta.streak || 0) + 1 : 1;
+      meta.lastDay = today;
+    }
+    if(meta.questDay !== today){ // görevler her gün sıfırlanır
+      meta.questDay = today;
+      meta.questP = [0, 0, 0];
+      meta.questDone = [false, false, false];
+    }
+    saveMeta();
+    if(meta.streak >= 7) unlockBadge('seri7');
+    if(meta.streak >= 30) unlockBadge('seri30');
+    const chip = document.getElementById('menuStreakChip');
+    if(chip) chip.textContent = '🔥 ' + meta.streak;
+    updateDailyBtnUI();
+  }
+
+  // Günün görevleri tarihten türetilir: herkes aynı gün aynı görevleri görür, her gün değişir.
+  // 6 çeşit görev türünden her gün 3'ü seçilir; HER GÜN KESİNLİKLE 1 Kolay + 1 Orta + 1 Zor gelir
+  // (hangi türün hangi zorlukta olacağı güne göre döner) — böylece 3 görev asla birbirinin aynı olmaz.
+  // type: ilerleme mantığı (cmp 'add' = biriktir, 'max' = en yükseği tut). targets: {kolay,orta,zor} hedefleri.
+  function questPool(){
+    return [
+      { type:'merge', cmp:'add', text: L.gorevBirlesme, targets:{kolay:20, orta:35, zor:50}   },
+      { type:'score', cmp:'max', text: L.gorevSkor,     targets:{kolay:1500, orta:2500, zor:4000} },
+      { type:'game',  cmp:'add', text: L.gorevOyun,     targets:{kolay:1, orta:2, zor:3}       },
+      { type:'combo', cmp:'max', text: L.gorevKombo,    targets:{kolay:3, orta:4, zor:5}       },
+      { type:'joker', cmp:'add', text: L.gorevJoker,    targets:{kolay:1, orta:2, zor:3}       },
+      { type:'level', cmp:'max', text: L.gorevSeviye,   targets:{kolay:5, orta:7, zor:9}       }
+    ];
+  }
+
+  // Her zorluk seviyesinin kendi ödül havuzu var: zor göreve daha değerli ödül çıkar.
+  // Çoğu ödül ANINDA hissedilir (XP); banka ödülleri kalıcı birikir, harcaması joker
+  // panelindeki pil üzerinden ve oyun başına 1 kullanımla sınırlıdır (dengeyi bozmaz).
+  function rewardPoolByDifficulty(diff){
+    if(diff === 'kolay') return [
+      { type:'xp', amount:150, icon:'⭐', label:L.odulXp150 },
+      { type:'bank', kind:'shuffle', icon:'🔀', label:L.odulBankShuffle },
+      { type:'xp', amount:200, icon:'⭐', label:L.odulXp200 }
+    ];
+    if(diff === 'orta') return [
+      { type:'xp', amount:300, icon:'🌟', label:L.odulXp300 },
+      { type:'bank', kind:'small', icon:'⬆️', label:L.odulBankSmall },
+      { type:'xp', amount:350, icon:'🌟', label:L.odulXp350 }
+    ];
+    return [ // zor
+      { type:'xp', amount:500, icon:'👑', label:L.odulXp500 },
+      { type:'bank', kind:'big', icon:'📌', label:L.odulBankBig },
+      { type:'xp', amount:600, icon:'👑', label:L.odulXp600 }
+    ];
+  }
+
+  function questDefs(){
+    const seed = meta.questDay.split('').reduce(function(a, c){ return a + c.charCodeAt(0); }, 0);
+    // Ödül seçimi için AYRI bir hash (ağırlıklı) kullanılıyor — aksi halde zorluk ataması ile
+    // aynı seed%3 köküne dayandığından her zorlukta hep aynı ödül çıkardı (test ederken yakalandı).
+    const seed2 = meta.questDay.split('').reduce(function(a, c, i){ return a + c.charCodeAt(0) * (i + 3); }, 0);
+    const pool = questPool();
+    const i0 = seed % pool.length;
+    const types = [pool[i0], pool[(i0 + 2) % pool.length], pool[(i0 + 4) % pool.length]];
+    // Zorluk ataması: her gün tam olarak 1 kolay + 1 orta + 1 zor, hangi slota düştüğü döner
+    const diffOrder = ['kolay', 'orta', 'zor'];
+    const shift = seed % 3;
+    const diffs = diffOrder.slice(shift).concat(diffOrder.slice(0, shift));
+    return types.map(function(q, slot){
+      const diff = diffs[slot];
+      const target = q.targets[diff];
+      const rewards = rewardPoolByDifficulty(diff);
+      const reward = rewards[(seed2 + slot) % rewards.length];
+      return { type:q.type, cmp:q.cmp, text: q.text.replace('{n}', target), target: target, reward: reward, diff: diff };
+    });
+  }
+
+  // Genel görev olayı: günün görevlerinden tipine uyanları ilerletir
+  function metaQuestEvent(type, value){
+    if(tutorialActive || !meta) return;
+    questDefs().forEach(function(q, i){
+      if(q.type !== type || meta.questDone[i]) return;
+      meta.questP[i] = q.cmp === 'max' ? Math.max(meta.questP[i], value) : meta.questP[i] + value;
+      questCheck(i);
+    });
+    saveMeta();
+  }
+
+  function questCheck(i){
+    const q = questDefs()[i];
+    if(meta.questDone[i] || meta.questP[i] < q.target) return;
+    meta.questDone[i] = true;
+    applyQuestReward(q.reward);
+    flashHint(L.gorevTamam.replace('{g}', q.text).replace('{o}', q.reward.label));
+    // Bir günde 3 görevi de bitirmek ayrı bir rozet — rastgele değil, gerçek bir başarı
+    if(meta.questDone[0] && meta.questDone[1] && meta.questDone[2]) unlockBadge('mukemmelGun');
+  }
+
+  // Ödülü türüne göre uygular. XP/joker-şimdi/karıştır anında hissedilir;
+  // joker-sonraki (varsa) eskisi gibi bir sonraki oyuna birikir.
+  function applyQuestReward(reward){
+    if(reward.type === 'xp'){
+      sessionXpEarned += reward.amount; // oyun sonu XP çubuğunda görünür, anında etkisi olur
+    } else if(reward.type === 'bank'){
+      // Kalıcı birikir (gün/oyun sınırı yok); harcaması joker panelindeki pil üzerinden,
+      // pil zaten oyun başına 1 kullanımla sınırlı olduğu için bankada 5 tane birikse de
+      // tek oyunda hepsi boşaltılamaz — dengeyi bozmaz.
+      meta.bank[reward.kind] = (meta.bank[reward.kind] || 0) + 1;
+      saveMeta();
+    }
+  }
+
+
+  function unlockBadge(id){
+    if(!meta || meta.badges[id]) return;
+    meta.badges[id] = true;
+    saveMeta();
+    flashHint('🏅 ' + L.rozetYeni + ': ' + (L[id + 'Adi'] || id));
+  }
+
+  // Oyun olayları (eğitimde sayılmaz)
+  function metaOnMerge(newLevel, combo){
+    if(tutorialActive || !meta) return;
+    meta.totals.merges++;
+    metaQuestEvent('merge', 1);
+    metaQuestEvent('score', score);
+    metaQuestEvent('combo', combo);
+    metaQuestEvent('level', newLevel + 1); // oyuncuya seviye 1'den sayılır
+    if(newLevel === LEVELS.length - 1) unlockBadge('karpuz');
+    if(combo >= 5) unlockBadge('kombo5');
+    if(combo >= 8) unlockBadge('kombo8');
+    if(meta.totals.merges >= 1000) unlockBadge('birlesme1k');
+    saveMeta();
+  }
+
+  function metaOnGameOver(){
+    if(tutorialActive || !meta) return;
+    meta.totals.games++;
+    metaQuestEvent('game', 1);
+    if(score >= 5000 && !jokerUsedThisGame) unlockBadge('jokersiz');
+    saveMeta();
+  }
+
+  function metaOnJokerUsed(){
+    if(tutorialActive || !meta) return;
+    jokerUsedThisGame = true;
+    metaQuestEvent('joker', 1);
+  }
+
+  // Görev ödüllerini bir sonraki oyuna uygular (bir kez tüketilir)
+  function applyBonusJokers(){
+    if(tutorialActive || dailyMode || !meta) return; // denemede herkes eşit jokerle oynar
+    if(!meta.bonusSmall && !meta.bonusBig) return;
+    smallJokers += meta.bonusSmall;
+    bigJokers += meta.bonusBig;
+    meta.bonusSmall = 0;
+    meta.bonusBig = 0;
+    saveMeta();
+    updateJokerUI();
+  }
+
+  // ---- Görevler modalı ----
+  function openQuests(){
+    const defs = questDefs();
+    document.getElementById('questStreak').textContent = '🔥 ' + meta.streak + ' ' + L.gunSeri;
+    document.getElementById('questList').innerHTML = defs.map(function(q, i){
+      const p = Math.min(meta.questP[i], q.target);
+      const done = meta.questDone[i];
+      const pct = Math.round(p / q.target * 100);
+      return '<div style="background:' + (done ? '#E8F5E9' : '#FFF3E0') + ';border-radius:12px;padding:10px 12px;margin-bottom:8px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;color:#4E342E;">' +
+          '<span>' + q.text + '</span><span>' + (done ? '✅' : q.reward.icon) + '</span>' +
+        '</div>' +
+        '<div style="font-size:10.5px;color:#a07850;margin-top:2px;">' + L.odulEtiket + ': ' + q.reward.label + '</div>' +
+        '<div style="background:#eee0cc;border-radius:6px;height:8px;margin-top:6px;overflow:hidden;">' +
+          '<div style="width:' + pct + '%;height:100%;background:' + (done ? '#66BB6A' : '#FF7043') + ';border-radius:6px;"></div>' +
+        '</div>' +
+        '<div style="font-size:11px;color:#a07850;margin-top:3px;text-align:right;">' + p + ' / ' + q.target + '</div>' +
+      '</div>';
+    }).join('');
+    // Biriken (bankadaki) ödülleri göster — sadece en az biri varsa satırı aç
+    const bank = (meta && meta.bank) || { small:0, big:0, shuffle:0 };
+    const bankRow = document.getElementById('bankRow');
+    if(bank.small > 0 || bank.big > 0 || bank.shuffle > 0){
+      bankRow.style.display = 'flex';
+      bankRow.innerHTML = '<span>🎒 ' + L.bankBaslik + ':</span>' +
+        '<span>⬆️ x' + bank.small + '</span>' +
+        '<span>📌 x' + bank.big + '</span>' +
+        '<span>🔀 x' + bank.shuffle + '</span>';
+    } else {
+      bankRow.style.display = 'none';
+    }
+    document.getElementById('questsModal').style.display = 'flex';
+  }
+
+  document.getElementById('menuQuestsBtn').addEventListener('click', openQuests);
+  document.getElementById('questsKapatBtn').addEventListener('click', function(){
+    document.getElementById('questsModal').style.display = 'none';
+  });
+  loadMeta(); // meta değişkeni yukarıda tanımlandıktan sonra çağrılmalı (TDZ hatası dersimiz)
+
+  // ---------- Günün Denemesi (seed'li, tek hak) ----------
+  function updateDailyBtnUI(){
+    const sub = document.getElementById('menuDailySub');
+    if(!sub || !meta) return;
+    sub.textContent = meta.dailyPlayed === todayStr() ? L.gunlukOynandi : L.gunlukDenemeSub;
+  }
+
+  function exitDailyMode(){ // deneme durumunu temizler (oyunu bitirmez)
+    dailyMode = false;
+    dailyRng = null;
+    document.getElementById('topAtBtn').style.display = '';
+    document.getElementById('btnJokerPanel').style.display = '';
+    if(dailySavedState){
+      try { localStorage.setItem('ballbasket_gamestate', dailySavedState); } catch(e){}
+      dailySavedState = null;
+      checkSavedGame();
+    }
+  }
+
+  function exitDailyToMenu(){
+    exitDailyMode();
+    resetGame();
+    pauseGameNow();
+    document.getElementById('gameOverOverlay').classList.remove('show');
+    document.getElementById('mainMenu').style.display = 'flex';
+  }
+
+  document.getElementById('menuDailyBtn').addEventListener('click', function(){
+    if(!getAuthSession()){ // deneme = skor yarışı; kimliksiz yarış olmaz
+      document.getElementById('menuDailySub').textContent = L.gunlukGirisGerekli;
+      return;
+    }
+    if(meta && meta.dailyPlayed === todayStr()){
+      const sub = document.getElementById('menuDailySub');
+      sub.textContent = L.gunlukOynandi; // durumu hatırlat
+      return;
+    }
+    startNewGameFlow(function(){
+      // Deneme başlıyor: klasik kaydı yedekle, hakkı yak, seed'i kur
+      dailySavedState = localStorage.getItem('ballbasket_gamestate');
+      meta.dailyPlayed = todayStr();
+      saveMeta();
+      updateDailyBtnUI();
+      dailyMode = true;
+      growingMode = false;
+      const seedStr = todayStr();
+      dailyRng = mulberry32(seedStr.split('').reduce(function(a,c){ return a*31 + c.charCodeAt(0); }, 7) >>> 0);
+      resetGame(); // dailyMode=true olduğundan spawn sırası seed'den gelir
+      smallJokers = 0; bigJokers = 0; updateJokerUI(); // saf beceri yarışı: joker yok
+      document.getElementById('topAtBtn').style.display = 'none'; // adil olsun
+      document.getElementById('btnJokerPanel').style.display = 'none';
+      document.getElementById('mainMenu').style.display = 'none';
+      flashHint(L.gunlukBasladi);
+      gamePaused = false;
+    });
+  });
+
+  // ---------- Reklamla / Bankadan +1 Joker (native köprü) ----------
+  // Pil önce BANKAYA bakar (görevlerden birikmiş, ücretsiz) — varsa oradan harcar.
+  // Banka boşsa reklam ister. İkisi de aynı "oyun başına 1" limitine tabi (adRewardUsed),
+  // yani bankada 5 tane birikse bile tek oyunda sadece 1 tanesi harcanabilir — dengeyi bozmaz.
+  // Kotlin tarafı window.AndroidAds.showRewardedAd(type) sağlar ve reklam
+  // tamamlanınca webView.evaluateJavascript("window.onAdReward('small')") çağırır.
+  function grantJokerReward(type){
+    if(type === 'small') smallJokers++;
+    else if(type === 'big') bigJokers++;
+    else if(type === 'shuffle') shuffleUsed = false;
+    updateJokerUI();
+  }
+
+  function updateAdBtns(){
+    [['small','adBtnSmall'],['big','adBtnBig'],['shuffle','adBtnShuffle']].forEach(function(pair){
+      const el = document.getElementById(pair[1]);
+      el.style.display = dailyMode ? 'none' : 'inline-block'; // denemede adalet: reklam/banka jokeri yok
+      const bankCount = (meta && meta.bank && meta.bank[pair[0]]) || 0;
+      const hasBank = bankCount > 0;
+      // Bankada varsa kaç tane biriktiğini de göster (ör. "🎁 x2"), yoksa reklam teklifi
+      el.textContent = adRewardUsed[pair[0]] ? '✓ kullanıldı' : (hasBank ? `🎁 x${bankCount}` : '📺 +1');
+      el.style.opacity = adRewardUsed[pair[0]] ? '0.35' : '1';
+    });
+  }
+
+  function requestJokerAd(type){
+    if(dailyMode) return;
+    if(adRewardUsed[type]){ flashHint(L.reklamKullanildi); return; }
+    if(meta && meta.bank && meta.bank[type] > 0){
+      meta.bank[type]--;
+      saveMeta();
+      grantJokerReward(type);
+      adRewardUsed[type] = true;
+      updateAdBtns();
+      flashHint(L.bankKullanildi);
+      return;
+    }
+    if(window.AndroidAds && typeof window.AndroidAds.showRewardedAd === 'function'){
+      window.AndroidAds.showRewardedAd(type);
+    } else {
+      flashHint(L.reklamHazirDegil); // tarayıcı testi / reklam yüklenmedi
+    }
+  }
+
+  // Native taraf reklam tamamlanınca burayı çağırır
+  window.onAdReward = function(type){
+    grantJokerReward(type);
+    adRewardUsed[type] = true;
+    updateAdBtns();
+    flashHint(L.reklamOdul);
+  };
+
+  [['small','adBtnSmall'],['big','adBtnBig'],['shuffle','adBtnShuffle']].forEach(function(pair){
+    document.getElementById(pair[1]).addEventListener('click', function(e){
+      e.stopPropagation(); // kartın kendi tıklamasını tetiklemesin
+      requestJokerAd(pair[0]);
+    });
+  });
+
+  // ---------- Oyun Sonu Skor Paylaşım Kartı ----------
+  // Görsel bir "skor kartı" üretip native paylaşım menüsüne (WhatsApp/Instagram/Twitter) yollar.
+  // Sıra: AndroidBridge (varsa, native paylaşım) → Web Share API (dosya) → indirme / metin paylaşımı.
+  function dataURLtoBlob(dataURL){
+    const parts = dataURL.split(',');
+    const mime = parts[0].match(/:(.*?);/)[1];
+    const bin = atob(parts[1]);
+    const arr = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+
+  function buildShareCardDataURL(){
+    const W = 720, H = 900;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const c = canvas.getContext('2d');
+
+    // Arka plan — oyunun sıcak/turuncu paletiyle uyumlu dikey gradyan
+    const bg = c.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#FFB74D');
+    bg.addColorStop(1, '#FF7043');
+    c.fillStyle = bg; c.fillRect(0, 0, W, H);
+
+    // Dekoratif toplar (arka planda hafif saydam daireler)
+    const decoColors = ['#ffffff33', '#ffffff22', '#ffffff2a'];
+    [[100,120,70],[610,180,50],[80,760,60],[640,720,80],[360,60,40]].forEach(function(p, i){
+      c.beginPath(); c.arc(p[0], p[1], p[2], 0, Math.PI*2);
+      c.fillStyle = decoColors[i % decoColors.length]; c.fill();
+    });
+
+    // Başlık
+    c.textAlign = 'center';
+    c.fillStyle = '#ffffff';
+    c.font = '800 40px "Baloo 2", sans-serif';
+    c.fillText('🧺 Ball Basket', W/2, 100);
+
+    // İsim (girişliyse)
+    const session = getAuthSession();
+    const name = (session && session.user && session.user.username) || (aktifDil === 'tr' ? 'Bir Oyuncu' : 'A Player');
+    c.font = '600 26px "Nunito", sans-serif';
+    c.fillStyle = 'rgba(255,255,255,0.9)';
+    c.fillText(name, W/2, 145);
+
+    // Büyük skor
+    c.font = '800 130px "Baloo 2", sans-serif';
+    c.fillStyle = '#fff';
+    c.shadowColor = 'rgba(0,0,0,0.25)'; c.shadowBlur = 12; c.shadowOffsetY = 4;
+    c.fillText(String(score), W/2, 340);
+    c.shadowBlur = 0; c.shadowOffsetY = 0;
+    c.font = '700 24px "Nunito", sans-serif';
+    c.fillStyle = 'rgba(255,255,255,0.85)';
+    c.fillText(aktifDil === 'tr' ? 'PUAN' : 'SCORE', W/2, 380);
+
+    // İstatistik kutuları (kombo / birleşme / rekor durumu)
+    const isNewRecord = score >= best;
+    const boxY = 440, boxH = 130, gap = 18, boxW = (W - 80 - gap*2) / 3;
+    const stats = [
+      { label: aktifDil === 'tr' ? 'EN İYİ KOMBO' : 'BEST COMBO', value: 'x' + gameBestCombo },
+      { label: aktifDil === 'tr' ? 'BİRLEŞME' : 'MERGES', value: String(gameMerges) },
+      { label: aktifDil === 'tr' ? 'REKOR' : 'RECORD', value: isNewRecord ? (aktifDil==='tr'?'YENİ! 🎉':'NEW! 🎉') : String(best) }
+    ];
+    stats.forEach(function(s, i){
+      const x = 40 + i * (boxW + gap);
+      c.fillStyle = 'rgba(255,255,255,0.16)';
+      roundRectPath(c, x, boxY, boxW, boxH, 18); c.fill();
+      c.fillStyle = '#fff';
+      c.font = '800 30px "Baloo 2", sans-serif';
+      c.fillText(s.value, x + boxW/2, boxY + 62);
+      c.font = '700 15px "Nunito", sans-serif';
+      c.fillStyle = 'rgba(255,255,255,0.8)';
+      c.fillText(s.label, x + boxW/2, boxY + 95);
+    });
+
+    // Alt bilgi + çağrı
+    c.font = '700 26px "Nunito", sans-serif';
+    c.fillStyle = '#fff';
+    c.fillText(aktifDil === 'tr' ? 'Beni geçebilir misin? 👀' : 'Can you beat me? 👀', W/2, 660);
+    c.font = '600 18px "Nunito", sans-serif';
+    c.fillStyle = 'rgba(255,255,255,0.75)';
+    c.fillText(todayStr(), W/2, 700);
+    c.font = '700 20px "Nunito", sans-serif';
+    c.fillStyle = 'rgba(255,255,255,0.9)';
+    c.fillText('🧺 Ball Basket', W/2, 830);
+
+    return canvas.toDataURL('image/png');
+  }
+
+  // Yuvarlak köşeli dikdörtgen çizim yardımcısı (isim çakışmasın diye özel isim —
+  // dosyada zaten farklı imzalı bir roundRect(x,y,w,h,r) fonksiyonu var, ona dokunmuyoruz)
+  function roundRectPath(c, x, y, w, h, r){
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+  }
+
+  async function shareScoreCard(){
+    let dataURL;
+    try { dataURL = buildShareCardDataURL(); }
+    catch(e){ flashHint(L.paylasBasarisiz); return; }
+
+    const filename = `ballbasket_skor_${score}.png`;
+    const shareText = aktifDil === 'tr'
+      ? `Ball Basket'te ${score} puan yaptım! Beni geçebilir misin? 🧺`
+      : `I scored ${score} in Ball Basket! Can you beat me? 🧺`;
+
+    // 1) Android native paylaşım köprüsü (varsa) — pack paylaşımıyla aynı arayüz
+    if(window.AndroidBridge && window.AndroidBridge.shareFile){
+      try {
+        const base64Data = dataURL.split(',')[1];
+        window.AndroidBridge.shareFile(base64Data, filename);
+        return;
+      } catch(e){ console.warn('Native paylaşım başarısız, web yöntemine geçiliyor:', e); }
+    }
+
+    // 2) Web Share API — dosya olarak (WhatsApp/Instagram gibi uygulamalara resim düşer)
+    try {
+      const blob = dataURLtoBlob(dataURL);
+      const file = new File([blob], filename, { type: 'image/png' });
+      if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
+        await navigator.share({ files: [file], title: 'Ball Basket', text: shareText });
+        return;
+      }
+    } catch(e){ console.warn('Web Share (dosya) başarısız:', e); }
+
+    // 3) Metin olarak paylaşım (resim desteklenmiyorsa en azından skor mesajı gitsin)
+    if(navigator.share){
+      try { await navigator.share({ text: shareText }); return; }
+      catch(e){ /* kullanıcı iptal etmiş olabilir, sessiz geç */ }
+    }
+
+    // 4) Son çare: görseli indir
+    try {
+      const a = document.createElement('a');
+      a.href = dataURL; a.download = filename; a.click();
+      flashHint(L.paylasIndirildi);
+    } catch(e){ flashHint(L.paylasBasarisiz); }
+  }
+
+  document.getElementById('shareScoreBtn').addEventListener('click', shareScoreCard);
+
+  // ---------- Etkileşimli Eğitim (oynayarak öğreten rehber mod) ----------
+  // Gerçek oyun motorunda geçer ama tamamen izole:
+  //  - randomSpawnLevel hep Kiraz döndürür (birleştirmesi garanti kolay)
+  //  - saveGameState devre dışı → kayıtlı oyunun ÜZERİNE YAZILMAZ (girişte yedeklenir, çıkışta geri konur)
+  //  - XP birikmez, triggerGameOver devre dışı → yanma şansı yok
+  //  - İlk iki adımda top sadece ok işaretli hedef bölgeye bırakılabilir, başka yere bırakılamaz
+  //  - Adımlar oyuncu o mekaniği GERÇEKTEN yapınca ilerler: bırak → birleştir → bombayı seç → patlat
+  let tutStage = 0;
+  let tutTargetX = null;       // hedef bölge merkezi (null = kısıt yok)
+  let tutSavedState = null;    // eğitime girerken kayıtlı oyunun yedeği
+  let tutNudgeUntil = 0;       // "hedefe bırak!" uyarısının bitiş zamanı
+
+  let hintTimer = null;
+  // Kısa süreli ipucu: yönerge bandını 1.6 sn gösterip eski haline döndürür
+  function flashHint(text){
+    const b = document.getElementById('tutBanner');
+    b.textContent = text;
+    b.style.display = 'block';
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(function(){
+      if(!tutorialActive){ b.style.display = 'none'; }
+      else { tutBanner(tutStage===0?L.tutS1:tutStage===1?L.tutS2:tutStage===2?L.tutS3:tutStage===3?L.tutS4:null); }
+    }, 1600);
+  }
+
+  function tutBanner(text){
+    const b = document.getElementById('tutBanner');
+    if(!text){ b.style.display = 'none'; return; }
+    b.textContent = text;
+    b.style.display = 'block';
+  }
+
+  // Yanlış yere bırakınca kısa uyarı gösterip yönergeye geri döner
+  function tutorialNudge(){
+    tutNudgeUntil = performance.now() + 1200;
+    tutBanner(L.tutHedef);
+    setTimeout(function(){
+      if(!tutorialActive) return;
+      if(performance.now() >= tutNudgeUntil){
+        tutBanner(tutStage === 0 ? L.tutS1 : tutStage === 1 ? L.tutS2 : null);
+      }
+    }, 1250);
+  }
+
+  // Hedef bölge göstergesi: kavanoz tabanında yeşil bant + üstünde zıplayan ok
+  function drawTutorialTarget(){
+    if(!tutorialActive || tutTargetX === null) return;
+    const tol = (jarRight - jarLeft) * 0.14;
+    const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 300);
+    ctx.save();
+    ctx.fillStyle = `rgba(76, 175, 80, ${0.10 + pulse * 0.12})`;
+    ctx.fillRect(tutTargetX - tol, jarTop, tol * 2, jarBottom - jarTop);
+    ctx.strokeStyle = `rgba(76, 175, 80, ${0.35 + pulse * 0.3})`;
+    ctx.setLineDash([6, 6]);
+    ctx.lineWidth = 2;
+    ctx.strokeRect(tutTargetX - tol, jarTop, tol * 2, jarBottom - jarTop);
+    ctx.setLineDash([]);
+    const bounce = Math.sin(performance.now() / 250) * 6;
+    ctx.font = '28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(46, 125, 50, 0.95)';
+    ctx.fillText('⬇', tutTargetX, jarTop + 40 + bounce);
+    ctx.restore();
+  }
+
+  function showTutCard(opts){
+    document.getElementById('tutEmoji').textContent = opts.emoji;
+    document.getElementById('tutTitle').textContent = opts.title;
+    document.getElementById('tutText').textContent = opts.text;
+    const note = document.getElementById('tutNote');
+    note.style.display = opts.note ? 'block' : 'none';
+    note.textContent = opts.note || '';
+    document.getElementById('tutPromptBtns').style.display = opts.mode === 'prompt' ? 'flex' : 'none';
+    const nextBtn = document.getElementById('tutNextBtn');
+    nextBtn.style.display = opts.mode === 'prompt' ? 'none' : 'block';
+    if(opts.btnText) nextBtn.textContent = opts.btnText;
+    if(opts.mode === 'prompt'){
+      document.getElementById('tutYesBtn').textContent = L.tutEvet;
+      document.getElementById('tutNoBtn').textContent = L.tutHayir;
+    }
+    document.getElementById('tutorialModal').style.display = 'flex';
+  }
+
+  function startTutorial(){
+    localStorage.setItem('ballbasket_tutorial_done', '1');
+    document.getElementById('tutorialModal').style.display = 'none';
+    document.getElementById('mainMenu').style.display = 'none';
+    tutSavedState = localStorage.getItem('ballbasket_gamestate'); // varsa kayıtlı oyunu yedekle
+    tutorialActive = true;
+    sessionXpEarned = 0;
+    resetGame(); // tutorialActive=true → toplar hep Kiraz; zaman modundan gelindiyse onu da kapatır
+    document.getElementById('topAtBtn').style.display = 'none'; // eğitimde kafa karıştırmasın
+    tutStage = 0;
+    tutTargetX = (jarLeft + jarRight) / 2; // ilk hedef: kavanozun ortası
+    tutBanner(L.tutS1);
+    gamePaused = false;
+  }
+
+  function finishTutorial(){
+    document.getElementById('tutorialModal').style.display = 'none';
+    tutBanner(null);
+    tutorialActive = false;
+    tutTargetX = null;
+    document.getElementById('btnJokerPanel').classList.remove('tutPulse');
+    sessionXpEarned = 0;
+    resetGame();
+    document.getElementById('topAtBtn').style.display = '';
+    if(tutSavedState){ // eğitimden önceki kayıtlı oyunu geri koy
+      try { localStorage.setItem('ballbasket_gamestate', tutSavedState); } catch(e){}
+      tutSavedState = null;
+    }
+    pauseGameNow();
+    document.getElementById('mainMenu').style.display = 'flex';
+    checkSavedGame(); // "Devam Et" butonu doğru görünsün
+  }
+
+  // Oyun içinden gelen olaylarla adım adım ilerler
+  function tutorialOnEvent(ev, x){
+    if(!tutorialActive) return;
+    if(tutStage === 0 && ev === 'drop'){
+      tutStage = 1;
+      tutTargetX = x; // ikinci top ilk topun üstüne gelsin ki birleşme garantilensin
+      tutBanner(L.tutS2);
+    } else if(tutStage === 1 && ev === 'merge'){
+      tutStage = 2;
+      tutTargetX = null;
+      tutBanner(L.tutS3);
+      document.getElementById('btnJokerPanel').classList.add('tutPulse'); // buton kendini belli etsin
+    } else if(tutStage === 2 && ev === 'bombSelected'){
+      tutStage = 3;
+      tutBanner(L.tutS4);
+      document.getElementById('btnJokerPanel').classList.remove('tutPulse');
+    } else if(tutStage === 3 && ev === 'bombUsed'){
+      tutStage = 4;
+      tutBanner(null);
+      pauseGameNow();
+      showTutCard({ emoji:'🎉', title:L.tutFinBaslik, text:L.tutFin, mode:'final', btnText:L.tutKapat });
+    }
+  }
+
+  // İlk oyun başlatıldığında bir kez sorulur (otomatik başlamaz)
+  function maybeShowTutorial(){
+    if(localStorage.getItem('ballbasket_tutorial_done')) return;
+    pauseGameNow();
+    showTutCard({ emoji:'🎓', title:L.tutSoruBaslik, text:L.tutSoru, note:L.tutNot, mode:'prompt' });
+  }
+
+  document.getElementById('tutYesBtn').addEventListener('click', startTutorial);
+  document.getElementById('tutNoBtn').addEventListener('click', function(){
+    localStorage.setItem('ballbasket_tutorial_done', '1'); // bir daha sormaz (Ayarlar'dan hep açılabilir)
+    document.getElementById('tutorialModal').style.display = 'none';
+    const menuVisible = document.getElementById('mainMenu').style.display !== 'none';
+    if(!menuVisible) gamePaused = false; // başlattığı oyuna devam
+  });
+  document.getElementById('tutNextBtn').addEventListener('click', function(){
+    if(tutorialActive && tutStage >= 4) finishTutorial();
+    else document.getElementById('tutorialModal').style.display = 'none';
+  });
+  // Ayarlar → Nasıl Oynanır? → eğitimi başlat
+  document.getElementById('howToPlayRow').addEventListener('click', function(){
+    document.getElementById('gameSettingsModal').style.display = 'none';
+    startTutorial();
   });
 
   // Ayarlar modal kapat
