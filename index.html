@@ -324,7 +324,7 @@
         <div style="font-size:64px;">🧺</div>
         <div style="font-size:32px;font-weight:700;color:#4E342E;font-family:'Nunito',sans-serif;">Ball Basket</div>
         <div id="menuSubtitle" style="font-size:14px;color:#8D6E63;margin-top:4px;">Topları birleştir, yüksek skor yap</div>
-        <div style="text-align:center;font-size:12px;font-weight:800;color:#FF7043;margin-top:6px;background:#fff;display:inline-block;padding:3px 10px;border-radius:10px;">🔧 build v112</div>
+        <div style="text-align:center;font-size:12px;font-weight:800;color:#FF7043;margin-top:6px;background:#fff;display:inline-block;padding:3px 10px;border-radius:10px;">🔧 build v113</div>
     </div>
     <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:12px;position:relative;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -1963,7 +1963,10 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
     // Şampiyonu yazısını da güncelle
     const champEl = document.getElementById('champText');
     if(champEl && champEl._champData) {
-      champEl.textContent = `${L.bugunSampiyonu}: ${champEl._champData.name} — ${champEl._champData.score} ${L.puan}`;
+      const cd = champEl._champData;
+      champEl.textContent = (cd.growingLevel !== undefined)
+        ? `${L.bugunSampiyonu}: ${cd.name} — 🏅${cd.growingLevel} · ${cd.score} ${L.puan}`
+        : `${L.bugunSampiyonu}: ${cd.name} — ${cd.score} ${L.puan}`;
     }
     setText('devamEtTitle', L.devamEt);
     setText('menuSubtitle', aktifDil === 'tr' ? 'Topları birleştir, yüksek skor yap' : 'Drop, merge and beat the high score');
@@ -2389,6 +2392,7 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       // yoksa başka bir modun kaydı geri yüklenirken yanlış büyüme mantığı uygulanabilirdi.
       growingLevel = growingLevelForScore(score); snapJarBounds();
       loadBest(); // devam edilen modun (Klasik/Zaman kategorisi) rekoru başlıkta doğru görünsün
+      updateChampBanner(growingMode ? 'growing' : timeMode ? ('time_' + (activeTimeSeconds === 60 ? '1min' : activeTimeSeconds === 180 ? '3min' : '5min')) : 'classic');
       return true;
     } catch(e) { return false; }
   }
@@ -4873,7 +4877,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     friendsScoresCache = {}; // arkadaş skor cache'ini de temizle
   }
 
-  function renderLeaderboard(scores, profileMap){
+  function renderLeaderboard(scores, profileMap, showLevel){
     const list = document.getElementById('leaderboardList');
     profileMap = profileMap || {};
     if(!scores || scores.length === 0){
@@ -4895,6 +4899,11 @@ document.getElementById('restartBtn').addEventListener('click', function() {
       const avatarHtml = photoUrl
         ? `<img src="${photoUrl}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
         : `<span style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.15);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;">👤</span>`;
+      // Büyüyen Kavanoz tablosunda: seviye skordan TÜRETİLİYOR (growingLevelForScore aynı formülü
+      // oyun içinde de kullanıyor), yani ayrı bir DB alanı gerekmiyor — kayıtlı her skor için geçerli.
+      const levelBadgeHtml = showLevel
+        ? `<span style="color:#E1BEE7;font-weight:800;font-size:0.72rem;white-space:nowrap;">🏅${growingLevelForScore(s.score)}</span>`
+        : '';
       return `
       <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:4px;
         background:${isMe?'rgba(255,140,60,0.30)':rankNum===1?'rgba(255,215,0,0.2)':rankNum===2?'rgba(192,192,192,0.15)':rankNum===3?'rgba(205,127,50,0.15)':'rgba(255,255,255,0.06)'};
@@ -4902,6 +4911,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
         <span style="font-size:1rem;width:20px;text-align:center;">${rankNum===1?'🥇':rankNum===2?'🥈':rankNum===3?'🥉':`${rankNum}.`}</span>
         ${avatarHtml}
         <span style="flex:1;color:#fff;font-weight:700;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${displayName}${isMe?` <span style="opacity:0.75;font-size:0.68rem;font-weight:800;color:#FFD9A0;">(${L.sen})</span>`:''}</span>
+        ${levelBadgeHtml}
         <span style="color:#FFE9C7;font-weight:800;font-size:0.85rem;">${s.score}</span>
         <span style="color:rgba(255,255,255,0.4);font-size:0.68rem;white-space:nowrap;">${s.date||''}</span>
       </div>`;
@@ -4960,7 +4970,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
         combined.push(Object.assign({}, myRow, { trueRank: rank }));
         below.forEach(function(e, idx){ combined.push(Object.assign({}, e, { trueRank: rank + 1 + idx })); });
         const avatarMap2 = await fetchAvatarMapForScores(combined.filter(function(s){ return !s.isGap; }), 'general');
-        renderLeaderboard(combined, avatarMap2);
+        renderLeaderboard(combined, avatarMap2, modeKey === 'growing');
       }
       bar.style.cssText = 'display:block;width:100%;max-width:320px;margin:0 auto 8px;padding:8px 12px;border-radius:10px;background:rgba(255,215,0,0.14);border:1px solid rgba(255,215,0,0.35);color:#FFE9C7;font-weight:700;font-size:0.85rem;text-align:center;';
     } catch(e){}
@@ -5123,7 +5133,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
         } else {
           const sliced = scores.slice(0,20);
           const avatarMap = await fetchAvatarMapForScores(sliced, 'friends');
-          renderLeaderboard(sliced, avatarMap);
+          renderLeaderboard(sliced, avatarMap, true);
         }
         return;
       }
@@ -5132,7 +5142,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
       });
       const scores = await res.json();
       const avatarMap = await fetchAvatarMapForScores(scores, 'general');
-      renderLeaderboard(scores, avatarMap);
+      renderLeaderboard(scores, avatarMap, true);
       showMyRank('growing', activeGrowingTab, scores);
     } catch(e) {
       list.innerHTML = `<p style="color:#e8425b;text-align:center;">${L.baglantiHatasi}</p>`;
@@ -5362,22 +5372,42 @@ document.getElementById('restartBtn').addEventListener('click', function() {
   updateScoreUI();
   requestAnimationFrame(loop);
 
-  // Sayfa açılışında günün şampiyonunu çek ve bandı göster
-  (async ()=>{
+  // "Bugünün Şampiyonu" bandı: her modun (Klasik/Zaman-süreye göre ayrı/Büyüyen/Deneme) KENDİ
+  // günlük lideri gösterilir — eskiden sadece Klasik'e bakıyordu, moda bakmaksızın sabit kalıyordu.
+  // Zaman Modu'nda 1/3/5 dk kategorileri birbirinden bağımsız, Büyüyen Kavanoz'da skorun yanına
+  // (growingLevelForScore ile skordan türetilen) seviye de eklenir.
+  let champBannerReqId = 0;
+  async function updateChampBanner(modeKey){
+    const reqId = ++champBannerReqId;
+    const banner = document.getElementById('champBanner');
+    const champText = document.getElementById('champText');
     try{
-      const scores = await fetchScores();
       const today = todayStr();
-      const todayScores = scores.filter(s => s.date === today);
-      const banner = document.getElementById('champBanner');
-      const champText = document.getElementById('champText');
-      if(todayScores.length > 0){
-        const champ = todayScores[0];
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/scores?select=*&mode=eq.${modeKey}&date=eq.${today}&order=score.desc&limit=1`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      const rows = await res.json();
+      if(reqId !== champBannerReqId) return; // hızlı mod değişiminde eski cevap ekranı ezmesin
+      if(!Array.isArray(rows) || rows.length === 0){
+        banner.style.display = 'none';
+        champText._champData = null;
+        return;
+      }
+      const champ = rows[0];
+      if(modeKey === 'growing'){
+        const lvl = growingLevelForScore(champ.score);
+        champText.textContent = `${L.bugunSampiyonu}: ${champ.name} — 🏅${lvl} · ${champ.score} ${L.puan}`;
+        champText._champData = Object.assign({}, champ, { growingLevel: lvl });
+      } else {
         champText.textContent = `${L.bugunSampiyonu}: ${champ.name} — ${champ.score} ${L.puan}`;
         champText._champData = champ;
-        banner.style.display = 'flex';
       }
-    }catch(e){ /* internet yoksa sessizce atla */ }
-  })();
+      banner.style.display = 'flex';
+    }catch(e){ /* internet yoksa sessizce atla, banner önceki durumunda kalır */ }
+  }
+
+  // Sayfa açılışında varsayılan mod Klasik olduğu için o günün klasik şampiyonuyla başlar
+  updateChampBanner('classic');
 
   // ---- Zaman Modu ----
   let timeRemaining = 0;
@@ -5445,6 +5475,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
         resetGame();
         startTimeMode(seconds);
         loadBest(); // artık timeMode+activeTimeSeconds doğru, bu sürenin kendi rekoru yüklenir
+        updateChampBanner('time_' + (seconds === 60 ? '1min' : seconds === 180 ? '3min' : '5min'));
         // resetGame() toplari Klasik Mod aralığından seçmişti (timeMode henüz false'tu),
         // şimdi Zaman Modu doğru aralığıyla (Elma-Ananas) yeniden seçiyoruz.
         if(dailyMode) exitDailyMode();
@@ -5492,6 +5523,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
       document.getElementById('mainMenu').style.display = 'none';
       resetGame(); // eksikti: Klasik Mod eskiden reset ATMADAN devam ediyordu — asıl hata buydu
       loadBest(); // Klasik'in kendi rekoru (Zaman Modu'ndan farklı kategori)
+      updateChampBanner('classic');
       gamePaused = false;
       maybeShowTutorial();
     });
@@ -5506,6 +5538,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
       resetGame(); // growingMode=true olduğundan kavanoz dar başlar (jarUsesGrowth() içinde kontrol edilir)
       document.getElementById('topAtBtn').style.display = 'none'; // bu modda yok
       loadBest(); // Büyüyen Kavanoz'un kendi rekoru — Klasik/Zaman'dan tamamen ayrı kategori
+      updateChampBanner('growing');
       gamePaused = false;
       maybeShowTutorial();
     });
@@ -6319,6 +6352,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
       document.getElementById('topAtBtn').style.display = 'none'; // adil olsun
       document.getElementById('btnJokerPanel').style.display = 'none';
       document.getElementById('mainMenu').style.display = 'none';
+      updateChampBanner('daily_ch');
       flashHint(L.gunlukBasladi);
       gamePaused = false;
     });
