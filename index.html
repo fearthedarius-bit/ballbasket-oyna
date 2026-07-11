@@ -157,23 +157,35 @@
       flex:1;
     }
     .nextWrap{
-      display:flex; align-items:center; gap:8px;
+      display:flex; flex-direction:column; align-items:center; gap:3px;
       background:var(--paper);
       border:2px solid var(--wood);
-      border-radius:16px;
-      padding:6px 12px 6px 8px;
+      border-radius:14px;
+      padding:5px 8px;
       box-shadow:0 2px 0 var(--shadow);
+      flex-shrink:0;
     }
-    .nextWrap span.lbl{ font-size:0.65rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; opacity:0.7; }
+    .nextWrap span.lbl{ font-size:0.6rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; opacity:0.7; }
+    .nextIconsRow{ display:flex; align-items:center; gap:4px; }
     #nextIcon{
-      width:34px; height:34px; border-radius:50%;
+      width:28px; height:28px; border-radius:50%;
       display:flex; align-items:center; justify-content:center;
-      font-size:1.2rem;
+      font-size:1rem;
       border:2px solid var(--wood);
       background:#fff;
       overflow:hidden;
     }
     #nextIcon img{ width:100%; height:100%; object-fit:cover; }
+    .nextIconSmall{
+      width:20px; height:20px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.7rem;
+      border:2px solid var(--wood);
+      background:#fff;
+      overflow:hidden;
+      opacity:0.75;
+    }
+    .nextIconSmall img{ width:100%; height:100%; object-fit:cover; }
 
     .iconBtn{
       font-family:'Baloo 2',sans-serif;
@@ -312,7 +324,7 @@
         <div style="font-size:64px;">🧺</div>
         <div style="font-size:32px;font-weight:700;color:#4E342E;font-family:'Nunito',sans-serif;">Ball Basket</div>
         <div id="menuSubtitle" style="font-size:14px;color:#8D6E63;margin-top:4px;">Topları birleştir, yüksek skor yap</div>
-        <div style="text-align:center;font-size:12px;font-weight:800;color:#FF7043;margin-top:6px;background:#fff;display:inline-block;padding:3px 10px;border-radius:10px;">🔧 build v95</div>
+        <div style="text-align:center;font-size:12px;font-weight:800;color:#FF7043;margin-top:6px;background:#fff;display:inline-block;padding:3px 10px;border-radius:10px;">🔧 build v112</div>
     </div>
     <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:12px;position:relative;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -409,14 +421,14 @@
 </div>
 <div id="app">
   <header>
-      <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;">
+      <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;flex-shrink:1;overflow:hidden;">
         <div style="display:flex;align-items:center;gap:8px;">
           <h1>Ball Basket</h1>
           <div id="timerDisplay" style="display:none;background:#5C6BC0;color:#fff;font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1rem;border-radius:10px;padding:4px 10px;">3:00</div>
         </div>
-        <div id="growingLevelBadge" style="display:none;background:#8E24AA;color:#fff;font-family:'Baloo 2',sans-serif;font-weight:800;font-size:2.2rem;border-radius:14px;padding:6px 16px;white-space:nowrap;">🏅 1</div>
+        <div id="growingLevelBadge" style="display:none;background:#8E24AA;color:#fff;font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.5rem;border-radius:12px;padding:4px 12px;white-space:nowrap;">🏅 1</div>
       </div>
-    <div style="display:flex;align-items:center;gap:3px;">
+    <div style="display:flex;align-items:center;gap:3px;flex-shrink:0;">
       <button id="btnSmallJoker" style="display:none;"></button>
       <button id="btnBigJoker" style="display:none;"></button>
       <button id="btnJokerPanel" style="background:#7B3FA0;box-shadow:0 2px 0 #5a2d75;border:none;border-radius:12px;padding:7px 11px;font-size:0.85rem;font-weight:700;color:#fff;cursor:pointer;white-space:nowrap;">🎮 Joker</button>
@@ -524,14 +536,18 @@
         <div style="padding:5px 14px;border-radius:20px;background:rgba(255,233,199,0.15);color:#FFE9C7;font-weight:700;font-size:0.75rem;">☀️ <span id="dailyChTodayLbl">Bugünkü Deneme</span> — <span id="dailyChDate"></span> &nbsp;·&nbsp; <span id="dailyChCountdown">⏳ --:--:--</span></div>
       </div>
       <div id="myRankBar" style="display:none;"></div>
-      <div id="leaderboardList" style="width:100%;max-width:320px;flex:1;overflow-y:auto;"></div>
+      <div id="leaderboardList" style="width:100%;max-width:320px;flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;"></div>
     </div>
   </div>
 
   <footer>
     <div class="nextWrap">
       <span id="siradakiLabel" class="lbl">Sıradaki</span>
-      <div id="nextIcon"></div>
+      <div class="nextIconsRow">
+        <div id="nextIcon"></div>
+        <div id="nextIcon2" class="nextIconSmall"></div>
+        <div id="nextIcon3" class="nextIconSmall"></div>
+      </div>
     </div>
     <div class="footerBtns">
       <button class="iconBtn" id="homeBtn" style="flex:1;flex-direction:column;justify-content:center;gap:2px;padding:6px 4px;">
@@ -563,6 +579,10 @@
       <button class="iconBtn" id="restartBtnSmall" style="flex:1;flex-direction:column;justify-content:center;gap:2px;padding:6px 4px;">
         <span style="font-size:1.1rem;">↺</span>
         <span id="yenidenLabel" style="font-size:0.6rem;">Yeniden</span>
+      </button>
+      <button class="iconBtn" id="pauseBtn" style="flex:1;flex-direction:column;justify-content:center;gap:2px;padding:6px 4px;">
+        <span id="pauseIcon" style="font-size:1.1rem;">⏸️</span>
+        <span id="pauseLabel" style="font-size:0.6rem;">Duraklat</span>
       </button>
       <button class="iconBtn" id="galleryBtn" style="display:none;">📷</button>
     </div>
@@ -603,6 +623,18 @@
     </div>
     <button class="topAtOption" data-count="100" style="background:#E64A19;border:none;border-radius:14px;padding:14px;color:white;font-size:16px;font-weight:800;cursor:pointer;width:100%;margin-bottom:12px;">💥 100</button>
     <button id="topAtKapat" style="background:none;border:none;color:#8D6E63;font-size:14px;cursor:pointer;">İptal</button>
+  </div>
+</div>
+
+<!-- Duraklatma Ekranı -->
+<div id="pauseOverlay" style="display:none;position:fixed;inset:0;background:rgba(58,43,34,0.75);z-index:2500;align-items:center;justify-content:center;">
+  <div style="background:#FFF8F5;border-radius:24px;padding:32px 28px;width:80%;max-width:300px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.25);">
+    <div style="font-size:40px;margin-bottom:10px;">⏸️</div>
+    <div id="pauseOverlayTitle" style="font-size:20px;font-weight:800;color:#4E342E;margin-bottom:20px;">Oyun Duraklatıldı</div>
+    <button id="pauseJokerBtn" style="background:#f08c1a;border:none;border-radius:14px;padding:14px 28px;color:white;font-size:16px;font-weight:800;cursor:pointer;width:100%;margin-bottom:10px;">🎮 Joker Kullan</button>
+    <button id="pauseTopAtBtn" style="background:#AB47BC;border:none;border-radius:14px;padding:14px 28px;color:white;font-size:16px;font-weight:800;cursor:pointer;width:100%;margin-bottom:10px;">🌧️ Top Yağdır</button>
+    <button id="pauseHomeBtn" style="background:#8D6E63;border:none;border-radius:14px;padding:14px 28px;color:white;font-size:16px;font-weight:800;cursor:pointer;width:100%;margin-bottom:10px;">🏠 Ana Menüye Dön</button>
+    <button id="pauseResumeBtn" style="background:#66BB6A;border:none;border-radius:14px;padding:14px 28px;color:white;font-size:16px;font-weight:800;cursor:pointer;width:100%;">▶️ Devam Et</button>
   </div>
 </div>
 
@@ -812,6 +844,13 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       <div id="langToggle" style="width:72px;height:28px;border-radius:14px;background:#5C6BC0;cursor:pointer;display:flex;align-items:center;justify-content:center;">
         <span id="langToggleText" style="color:#fff;font-size:12px;font-weight:700;">TR</span>
       </div>
+    </div>
+    <div id="deleteAccountRow" style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #eee0cc;cursor:pointer;">
+      <div>
+        <div id="hesapSilLabel" style="font-weight:700;color:#C62828;font-size:0.95rem;">🗑️ Hesabımı Sil</div>
+        <div id="hesapSilSubLabel" style="font-size:0.8rem;color:#7a4a30;margin-top:2px;">Hesap ve verilerinin silinmesini talep et</div>
+      </div>
+      <span style="color:#7a4a30;font-size:1.1rem;">›</span>
     </div>
     <div style="margin-top:20px;">
       <button id="closeGameSettingsBtn" class="iconBtn" style="width:100%;justify-content:center;margin-top:8px;"><span id="settingsOkLabel">Tamam</span></button>
@@ -1034,17 +1073,17 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
 
   // ---------- Meyve seviyeleri ----------
  const LEVELS = [
-    { name:"Kiraz",     nameEn:"Cherry",     emoji:"🍒", color:"#d6336c", r:0.065 }, 
-    { name:"Çilek",     nameEn:"Strawberry", emoji:"🍓", color:"#e8425b", r:0.076 }, 
-    { name:"Üzüm",      nameEn:"Grape",      emoji:"🍇", color:"#7048a6", r:0.091 }, 
-    { name:"Mandalina", nameEn:"Mandarin",   emoji:"🍊", color:"#f08c1a", r:0.115 }, 
-    { name:"Elma",      nameEn:"Apple",      emoji:"🍎", color:"#e0363b", r:0.135 }, 
-    { name:"Armut",     nameEn:"Pear",       emoji:"🍐", color:"#94c13d", r:0.160 }, 
-    { name:"Mango",     nameEn:"Mango",      emoji:"🥭", color:"#f4a26b", r:0.190 }, 
-    { name:"Ananas",    nameEn:"Pineapple",  emoji:"🍍", color:"#f0b72f", r:0.220 }, 
-    { name:"Kavun",     nameEn:"Melon",      emoji:"🍈", color:"#b9d96a", r:0.240 }, 
-    { name:"Karpuz",    nameEn:"Watermelon", emoji:"🍉", color:"#2f9e44", r:0.265 },
-    { name:"Gezegen",   nameEn:"Planet",     emoji:"🪐", color:"#4287f5", r:0.300 }
+    { name:"Kiraz",     nameEn:"Cherry",     emoji:"🍒", color:"#d6336c", r:0.068 }, 
+    { name:"Çilek",     nameEn:"Strawberry", emoji:"🍓", color:"#e8425b", r:0.080 }, 
+    { name:"Üzüm",      nameEn:"Grape",      emoji:"🍇", color:"#7048a6", r:0.096 }, 
+    { name:"Mandalina", nameEn:"Mandarin",   emoji:"🍊", color:"#f08c1a", r:0.121 }, 
+    { name:"Elma",      nameEn:"Apple",      emoji:"🍎", color:"#e0363b", r:0.142 }, 
+    { name:"Armut",     nameEn:"Pear",       emoji:"🍐", color:"#94c13d", r:0.168 }, 
+    { name:"Mango",     nameEn:"Mango",      emoji:"🥭", color:"#f4a26b", r:0.200 }, 
+    { name:"Ananas",    nameEn:"Pineapple",  emoji:"🍍", color:"#f0b72f", r:0.231 }, 
+    { name:"Kavun",     nameEn:"Melon",      emoji:"🍈", color:"#b9d96a", r:0.252 }, 
+    { name:"Karpuz",    nameEn:"Watermelon", emoji:"🍉", color:"#2f9e44", r:0.278 },
+    { name:"Gezegen",   nameEn:"Planet",     emoji:"🪐", color:"#4287f5", r:0.315 }
   ];
 
   const PACKAGES = [
@@ -1507,7 +1546,7 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       klasikMod: 'Klasik Mod', klasikSub: 'Topları düşür, birleştir',
       zamanModu: 'Zaman Modu', zamanSub: 'Süre dolmadan en yüksek puanı yap',
       fotograflarim: 'Fotoğraflarım', skorTablosu: 'Skor Tablosu',
-      ayarlar: 'Ayarlar', hakkinda: 'Hakkında',
+      ayarlar: 'Ayarlar', hakkinda: 'Hakkında', hesapSil: '🗑️ Hesabımı Sil', hesapSilSub: 'Hesap ve verilerinin silinmesini talep et',
       joker: '🎮 Joker', skor: 'Skor', rekor: 'Rekor',
       siradaki: 'Sıradaki', topYagdir: 'Top Yağdır', yeniden: 'Yeniden', menu: 'Menü',
       kacTop: 'Kaç top yağsın?', topSub: 'Toplar otomatik düşer, sen birleştirirsin',
@@ -1643,7 +1682,7 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       klasikMod: 'Classic Mode', klasikSub: 'Drop and merge balls',
       zamanModu: 'Time Mode', zamanSub: 'Max score before time runs out',
       fotograflarim: 'My Photos', skorTablosu: 'Leaderboard',
-      ayarlar: 'Settings', hakkinda: 'About',
+      ayarlar: 'Settings', hakkinda: 'About', hesapSil: '🗑️ Delete My Account', hesapSilSub: 'Request deletion of your account and data',
       joker: '🎮 Joker', skor: 'Score', rekor: 'Best',
       siradaki: 'Next', topYagdir: 'Ball Rain', yeniden: 'Restart', menu: 'Menu',
       kacTop: 'How many balls?', topSub: 'Balls drop automatically, you merge them',
@@ -1852,6 +1891,8 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
     setText('questResetNote', L.gorevYenilenir);
     setText('questsKapatBtn', L.kapat);
     setText('nasilOynanirSubLabel', L.nasilOynanirSub);
+    setText('hesapSilLabel', L.hesapSil);
+    setText('hesapSilSubLabel', L.hesapSilSub);
     document.getElementById('loginEmailInput').placeholder = L.eposta;
     document.getElementById('loginPasswordInput').placeholder = L.sifre;
     setText('logoutLabel', L.cikisYap);
@@ -1998,6 +2039,9 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
   let growCharSx = 0; // karakterin son çizildiği yatay konum (toz patlaması buraya konur)
   let growShakeUntil = 0; // ekran sarsıntısının biteceği an (performance.now() bazlı)
   let growShakeMag = 0; // sarsıntının şiddeti (piksel)
+  let growDustSpins = []; // yeni kata çıkarken dönen toz bulutları
+  let growNewestFloorNum = 0; // "pat" diye zıplayarak beliren en yeni kat
+  let growNewestFloorPopUntil = 0; // bu animasyonun biteceği an
 
   // Skordan seviyeyi bulan TERS formül (eşik(L) = 500*(L-1)*L/2'nin tersi).
   function growingLevelForScore(sc){
@@ -2052,7 +2096,9 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
     growCharTargetFeetY = growingCharFeetYFor(growingLevel);
     growCelebrateUntil = performance.now() + 1000; // 1 sn'lik kutlama — oyun bu sürede donar
     growCelebrateLevel = growingLevel;
-    spawnParticles(growCharSx, growCharTargetFeetY, '#8B5E3C', 14); // yeni kata çıkarken toz patlaması
+    // spawnDustSpin(growCharSx, growCharTargetFeetY); // dönen toz efekti beğenilmedi — kapatıldı
+    growNewestFloorNum = Math.min(growingLevel, 16); // bu kat "pat" diye zıplayarak belirsin
+    growNewestFloorPopUntil = performance.now() + 400;
     growShakeUntil = performance.now() + 260; // kısa bir ekran sarsıntısı
     growShakeMag = 5;
     updateGrowingLevelUI();
@@ -2125,7 +2171,7 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
   let pendingComboReset = false; // bir sonraki top düşünce sıfırla
   let dangerPulse = 0;
   let currentLevel = randomSpawnLevel(); // şu an elde tutulan top
-  let nextLevel = randomSpawnLevel();    // sıradaki (ikonda gösterilen)
+  let nextQueue = [randomSpawnLevel(), randomSpawnLevel(), randomSpawnLevel()]; // sıradaki 3 top (ikonlarda gösterilen)
   let aimX = 0;
   let pointerActive = false;
   let canDrop = true;
@@ -2292,7 +2338,7 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
         })),
         score,
         currentLevel,
-        nextLevel,
+        nextQueue,
         smallJokers,
         bigJokers,
         shuffleUsed,
@@ -2315,7 +2361,15 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       balls = state.balls;
       score = state.score || 0;
       currentLevel = state.currentLevel ?? randomSpawnLevel();
-      nextLevel = state.nextLevel ?? randomSpawnLevel();
+      // Eski kayıtlarda tekil nextLevel vardı, yeni kayıtlarda nextQueue (3'lü) var — ikisini de destekle
+      if(Array.isArray(state.nextQueue) && state.nextQueue.length > 0){
+        nextQueue = state.nextQueue.slice(0,3);
+        while(nextQueue.length < 3) nextQueue.push(randomSpawnLevel());
+      } else if(state.nextLevel !== undefined){
+        nextQueue = [state.nextLevel, randomSpawnLevel(), randomSpawnLevel()];
+      } else {
+        nextQueue = [randomSpawnLevel(), randomSpawnLevel(), randomSpawnLevel()];
+      }
       smallJokers = state.smallJokers ?? 3;
       bigJokers = state.bigJokers ?? 1;
       shuffleUsed = state.shuffleUsed ?? false;
@@ -2391,11 +2445,12 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       document.getElementById('bestVal').textContent = best;
   }
 
-  function renderNextIcon(){
-    const box = document.getElementById('nextIcon');
+  function renderOneNextIcon(boxId, level){
+    const box = document.getElementById(boxId);
+    if(!box) return;
     box.innerHTML = '';
-    const lvl = LEVELS[nextLevel];
-    const imgSrc = (customImages[nextLevel] && customImages[nextLevel].src) || lvl.img;
+    const lvl = LEVELS[level];
+    const imgSrc = (customImages[level] && customImages[level].src) || lvl.img;
     if(imgSrc){
       const img = document.createElement('img');
       img.src = imgSrc;
@@ -2418,6 +2473,12 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       box.textContent = lvl.emoji;
       box.style.background = lvl.color + '22';
     }
+  }
+
+  function renderNextIcon(){
+    renderOneNextIcon('nextIcon', nextQueue[0]);
+    renderOneNextIcon('nextIcon2', nextQueue[1]);
+    renderOneNextIcon('nextIcon3', nextQueue[2]);
   }
 
   function spawnWaitingBall(){
@@ -2449,8 +2510,8 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
     playDrop();
     pendingComboReset = true;
     dropCooldownUntil = performance.now() + 380;
-    currentLevel = nextLevel;
-    nextLevel = randomSpawnLevel();
+    currentLevel = nextQueue.shift();
+    nextQueue.push(randomSpawnLevel());
     waitingR = radiusOf(currentLevel);
     aimX = clamp(aimX, jarLeft+waitingR, jarRight-waitingR);
     renderNextIcon();
@@ -2509,30 +2570,45 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
         const minDist = a.r + c.r;
         if(dist < minDist && dist > 0.0001){
           const nx = dx/dist, ny = dy/dist;
-          if(a.level === c.level && a.level < LEVELS.length-1
+          if(a.level === c.level
               && !usedThisFrame.has(a.id) && !usedThisFrame.has(c.id)){
             mergePairs.push([a,c]);
             usedThisFrame.add(a.id); usedThisFrame.add(c.id);
             continue;
           }
           const overlap = (minDist - dist) / 2;
-          a.x -= nx*overlap; a.y -= ny*overlap;
-          c.x += nx*overlap; c.y += ny*overlap;
+          // Kütle, topun alanıyla (r²) orantılı — büyük toplar ağır, küçük toplar hafif.
+          // Bu sayede küçük bir top büyük bir topa çarpınca artık onu fırlatamıyor,
+          // kendisi geri sekiyor; büyük top neredeyse yerinden oynamıyor.
+          const ma = a.r*a.r, mc = c.r*c.r, totalM = ma + mc;
+          a.x -= nx*overlap*2*(mc/totalM); a.y -= ny*overlap*2*(mc/totalM);
+          c.x += nx*overlap*2*(ma/totalM); c.y += ny*overlap*2*(ma/totalM);
           const rvx = c.vx-a.vx, rvy = c.vy-a.vy;
           const relVel = rvx*nx + rvy*ny;
           if(relVel < 0){
-            const imp = -(1+RESTITUTION) * relVel / 2;
-            a.vx -= imp*nx; a.vy -= imp*ny;
-            c.vx += imp*nx; c.vy += imp*ny;
+            const imp = -(1+RESTITUTION) * relVel / (1/ma + 1/mc);
+            a.vx -= (imp/ma)*nx; a.vy -= (imp/ma)*ny;
+            c.vx += (imp/mc)*nx; c.vy += (imp/mc)*ny;
           }
         }
       }
     }
 
     for(const [a,c] of mergePairs){
-      const newLevel = a.level+1;
       const mx = (a.x+c.x)/2, my = (a.y+c.y)/2;
       balls = balls.filter(b=>b.id!==a.id && b.id!==c.id);
+
+      if(a.level === LEVELS.length-1){
+        // En büyük iki top birleşince yeni bir seviye yok, sadece patlayıp bonus puan veriyor
+        spawnParticles(mx, my, '#2f9e44', 18);
+        score += 200;
+        spawnScorePopup(mx, my - a.r - 6, 200);
+        updateScoreUI();
+        pop(520);
+        continue;
+      }
+
+      const newLevel = a.level+1;
       const newR = radiusOf(newLevel);
 
       // 5. ve 6. seviye (index 4 ve 5) birleşmeler yukarıdan düşer
@@ -2565,23 +2641,6 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
       checkJarGrowth();
     }
 
-    for(let i=0;i<balls.length;i++){
-      for(let j=i+1;j<balls.length;j++){
-        const a=balls[i], c=balls[j];
-        if(a.level===LEVELS.length-1 && c.level===LEVELS.length-1){
-          const dx=c.x-a.x, dy=c.y-a.y;
-          if(Math.hypot(dx,dy) < (a.r+c.r)*0.9){
-            spawnParticles((a.x+c.x)/2,(a.y+c.y)/2,'#2f9e44',18);
-            score += 200;
-            spawnScorePopup((a.x+c.x)/2, (a.y+c.y)/2 - a.r - 6, 200);
-            updateScoreUI();
-            balls = balls.filter(b=>b.id!==a.id && b.id!==c.id);
-            pop(520);
-            return;
-          }
-        }
-      }
-    }
   }
 
   function spawnParticles(x,y,color,count){
@@ -2651,6 +2710,41 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
     particles = particles.filter(p=>p.life>0);
     updateScorePopups(dt);
     updateChainRings(dt);
+    updateDustSpins(dt);
+  }
+
+  // Yeni kata çıkarken ayaklar altında beliren, gerçekten DÖNEN küçük bir toz bulutu.
+  // Genel spawnParticles() (dışa doğru rastgele fırlayan parçacıklar) "dönüyor" hissi
+  // vermiyordu — bu yüzden ayrı, birbirinin etrafında yörüngede dönen noktalardan oluşan
+  // özel bir sistem kuruldu.
+  function spawnDustSpin(x, y){
+    growDustSpins.push({ x, y, life: 1 });
+  }
+  function updateDustSpins(dt){
+    for(const d of growDustSpins){ d.life -= dt * 1.1; }
+    growDustSpins = growDustSpins.filter(d => d.life > 0);
+  }
+  function drawDustSpins(){
+    if(growDustSpins.length === 0) return;
+    const now = performance.now();
+    ctx.save();
+    for(const d of growDustSpins){
+      const age = 1 - d.life; // 0 (yeni doğdu) → 1 (kayboluyor)
+      const orbitR = 16 * (1 - age * 0.4); // yörünge yavaşça daralır
+      const dots = 5;
+      for(let i = 0; i < dots; i++){
+        const angle = age * 9 + i * (Math.PI * 2 / dots); // gerçek dönüş — açı zamanla artar
+        const dx = d.x + Math.cos(angle) * orbitR;
+        const dy = d.y + Math.sin(angle) * orbitR * 0.4 - age * 22; // yassı elips (yerdeki toz) + hafif yükseliş
+        ctx.globalAlpha = Math.max(0, d.life) * 0.75;
+        ctx.fillStyle = '#8B5E3C';
+        ctx.beginPath();
+        ctx.arc(dx, dy, 3.5 * Math.max(0.2, d.life), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
   }
 
   // ---------- Zincir Reaksiyon ----------
@@ -2730,6 +2824,8 @@ Kendi fotoğraflarını yükleyerek topları kişiselleştirebilirsin. 🎨</spa
 
 function triggerGameOver(){
     if(tutorialActive) return; // eğitimde yanmak yok
+    manualPauseOn = false;
+    document.getElementById('pauseOverlay').style.display = 'none';
     metaOnGameOver();
     gameOver = true;
     playGameOver();
@@ -2777,12 +2873,16 @@ function triggerGameOver(){
     }
 
     // Reklam göster
-    if(window.AndroidBridge) {
-        setTimeout(() => AndroidBridge.showAd(), 500);
-    }
+    // GEÇİCİ OLARAK KAPALI — AdMob SDK'sındaki edge-to-edge/kapatma butonu hatası
+    // düzeltilene kadar interstitial reklam gösterilmiyor.
+    // if(window.AndroidBridge) {
+    //     setTimeout(() => AndroidBridge.showAd(), 500);
+    // }
 }
 
   function resetGame(){
+    manualPauseOn = false;
+    document.getElementById('pauseOverlay').style.display = 'none';
     syncSessionXp();
     smallJokers = 1;
     bigJokers = 1;
@@ -2807,7 +2907,7 @@ function triggerGameOver(){
     score = 0; gameOver = false; overLineSince = null;
     growingLevel = 1; snapJarBounds(); // her yeni Büyüyen Kavanoz oyunu Seviye 1'den, dar kavanozla başlar
     currentLevel = randomSpawnLevel();
-    nextLevel = randomSpawnLevel();
+    nextQueue = [randomSpawnLevel(), randomSpawnLevel(), randomSpawnLevel()];
     spawnWaitingBall();
     updateScoreUI();
     document.getElementById('gameOverOverlay').classList.remove('show');
@@ -2950,7 +3050,26 @@ function triggerGameOver(){
       const fH = floorStep * 1.01; // hafif üst üste bindirme — aralarında hiç boşluk kalmasın
       const fLeft = sx - floorW / 2;
       if(img.complete && img.naturalWidth > 0){
-        ctx.drawImage(img, fLeft, fTop, floorW, fH);
+        // Az önce beliren kat, "pat" diye hafif taşarak büyüyüp yerine oturur (anında belirmesin diye)
+        let popScale = 1;
+        if(i === growNewestFloorNum){
+          const remain = growNewestFloorPopUntil - performance.now();
+          if(remain > 0){
+            const t = 1 - remain / 400;
+            popScale = t < 0.6 ? (t / 0.6) * 1.15 : 1.15 - ((t - 0.6) / 0.4) * 0.15;
+          }
+        }
+        if(popScale !== 1){
+          const cx = fLeft + floorW / 2, cy = fTop + fH / 2;
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.scale(popScale, popScale);
+          ctx.translate(-cx, -cy);
+          ctx.drawImage(img, fLeft, fTop, floorW, fH);
+          ctx.restore();
+        } else {
+          ctx.drawImage(img, fLeft, fTop, floorW, fH);
+        }
       }
     }
     // Altın kademede (13-16. seviye) karakterin etrafında yavaşça parıldayan küçük yıldızlar
@@ -3137,6 +3256,7 @@ function triggerGameOver(){
     }
     drawJar();
     drawGrowZone();
+    // drawDustSpins(); // dönen toz efekti beğenilmedi — kapatıldı
 
     if(activeJoker) {
       ctx.save();
@@ -3286,7 +3406,7 @@ function triggerGameOver(){
       
       activeJoker = null;
       updateJokerUI();
-      gamePaused = false;
+      resumeAfterJokerFlow();
       return; 
     }
 
@@ -3315,10 +3435,10 @@ function triggerGameOver(){
     window.addEventListener('pointerup', e=>{
       if(pointerActive && !e.target.closest('#gameWrap')){ pointerActive = false; }
     });
-    wrap.addEventListener('touchmove', e=>e.preventDefault(), {passive:false});
+    wrap.addEventListener('touchmove', e=>{ if(e.target.closest('#leaderboardList')) return; e.preventDefault(); }, {passive:false});
   } else {
     wrap.addEventListener('touchstart', startAim, {passive:true});
-    wrap.addEventListener('touchmove', e=>{ e.preventDefault(); moveAim(e); }, {passive:false});
+    wrap.addEventListener('touchmove', e=>{ if(e.target.closest('#leaderboardList')) return; e.preventDefault(); moveAim(e); }, {passive:false});
     wrap.addEventListener('touchend', endAim, {passive:true});
     window.addEventListener('touchend', e=>{
       if(pointerActive && !e.target.closest('#gameWrap')){ pointerActive = false; }
@@ -3482,6 +3602,52 @@ document.getElementById('restartBtn').addEventListener('click', function() {
   document.getElementById('restartBtnSmall').addEventListener('click', function() {
     if(dailyMode){ flashHint(L.gunlukTekHak); return; }
     showConfirmModal(function(){ resetGame(); });
+  });
+
+  // ---------- Duraklatma (Pause) ----------
+  let manualPauseOn = false;
+  function togglePause(){
+    if(gameOver || tutorialActive) return; // oyun bittiyse ya da eğitimdeyken duraklatma anlamsız
+    if(!manualPauseOn){
+      manualPauseOn = true;
+      pauseGameNow();
+      document.getElementById('pauseOverlay').style.display = 'flex';
+    } else {
+      manualPauseOn = false;
+      gamePaused = false;
+      document.getElementById('pauseOverlay').style.display = 'none';
+    }
+  }
+  document.getElementById('pauseBtn').addEventListener('click', togglePause);
+  document.getElementById('pauseResumeBtn').addEventListener('click', togglePause);
+
+  // Duraklatma ekranından "Joker" kullanma: paneli manuel duraklatmayı bozmadan açar,
+  // joker işlemi bitince (iptal/kullanım) otomatik olarak duraklatma ekranına geri döner.
+  function resumeAfterJokerFlow(){
+    if(manualPauseOn){
+      document.getElementById('pauseOverlay').style.display = 'flex';
+    } else {
+      gamePaused = false;
+    }
+  }
+  document.getElementById('pauseJokerBtn').addEventListener('click', () => {
+    document.getElementById('pauseOverlay').style.display = 'none';
+    updateAdBtns();
+    document.getElementById('jokerPanel').style.display = 'flex';
+    pauseGameNow();
+  });
+
+  // Top Yağdır ve Ana Menüye Dön: mevcut footer butonlarının tıklanmasını tetikleyip
+  // aynı (test edilmiş) akışı kullanıyoruz, kod tekrarından kaçınıyoruz.
+  document.getElementById('pauseTopAtBtn').addEventListener('click', () => {
+    manualPauseOn = false;
+    document.getElementById('pauseOverlay').style.display = 'none';
+    document.getElementById('topAtBtn').click();
+  });
+  document.getElementById('pauseHomeBtn').addEventListener('click', () => {
+    manualPauseOn = false;
+    document.getElementById('pauseOverlay').style.display = 'none';
+    document.getElementById('homeBtn').click();
   });
 
   // ---------- Liderlik Tablosu ----------
@@ -4684,11 +4850,14 @@ document.getElementById('restartBtn').addEventListener('click', function() {
 
   async function saveScore(name, pts){
     const session = getAuthSession();
-    await fetch(`${SUPABASE_URL}/rest/v1/scores`, {
+    if(!session || !session.user){
+      // Giriş yapılmadan skor kaydedilemez (RLS bunu zaten reddeder) — burada erken çıkıp
+      // kullanıcıya net bir mesaj gösterebilmek için throw ediyoruz.
+      throw new Error('login-required');
+    }
+    await authorizedFetch(`${SUPABASE_URL}/rest/v1/scores`, {
       method: 'POST',
       headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
         'Content-Type': 'application/json',
         'Prefer': 'return=minimal'
       },
@@ -4697,7 +4866,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
         score: pts,
         mode: dailyMode ? 'daily_ch' : timeMode ? `time_${activeTimeSeconds === 60 ? '1min' : activeTimeSeconds === 180 ? '3min' : '5min'}` : growingMode ? 'growing' : 'classic',
         date: todayStr(),
-        user_id: (session && session.user && session.user.id) || null
+        user_id: session.user.id
       })
     });
     cachedScores = null; // cache'i temizle, bir sonraki açılışta taze veri gelsin
@@ -4715,7 +4884,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     const myId = mySession ? mySession.user.id : null;
     list.innerHTML = scores.map((s,i) => {
       if(s.isGap){
-        // İlk 10 ile senin komşu satırların arasında gerçek bir boşluk olduğunu gösteren dar işaret
+        // İlk 15 ile senin komşu satırların arasında gerçek bir boşluk olduğunu gösteren dar işaret
         return '<div style="text-align:center;color:rgba(255,255,255,0.4);font-weight:800;margin:2px 0;font-size:1.3rem;line-height:1;padding:2px 0;">⋮</div>';
       }
       const rankNum = s.trueRank || (i + 1); // komşu satırlarda dizideki konum değil GERÇEK sıra gösterilir
@@ -4768,44 +4937,30 @@ document.getElementById('restartBtn').addEventListener('click', function() {
       const rank = total + 1;
       bar.innerHTML = `🏅 ${L.siran}: <b>#${rank}</b> &nbsp;·&nbsp; ${L.enIyiKisa}: <b>${best}</b>`;
 
-      // İlk 10'un dışındaysan (ve elimizde ilk-10 listesi varsa) genişletilmiş görünüm çiziyoruz.
-      // İki durum var: (a) 11./12. sıradaysan gerçek bir boşluk yok, direkt uzatırız — komşu
-      // sorgusu yerine tek bir "10.'dan itibaren" sorgusu yeter, mükerrer satır çıkmaz.
-      // (b) 12'den sonraysan gerçek boşluk var, "üstte 2 · sen · altta 2" + "⋮" gösterilir.
-      if(rank > 10 && Array.isArray(topScores) && topScores.length >= 10){
-        const tenthScore = topScores[9].score;
-        if(rank <= 12){
-          // combined = topScores'un ilk 9'u + bu "extra" sorgusu; toplamda tam rank+2 satır
-          // olması için extra'nın limiti (rank+2)-9 olmalı, yoksa fazla satır çekilip gösterilir.
-          const extraLimit = (rank + 2) - 9;
-          const extraRes = await fetch(`${SUPABASE_URL}/rest/v1/scores?select=*&mode=eq.${modeKey}&score=lte.${tenthScore}${dateFilter}&order=score.desc&limit=${extraLimit}`, {
+      // Varsayılan görünüm ilk 20'dir (zaten topScores olarak ekranda). Sadece ilk 20'nin
+      // dışındaysan (rank > 20) özel görünüme geçiyoruz: ilk 15 + "⋮" + kendi etrafında 5'lik
+      // pencere (üstte 2 · sen · altta 2). rank>20 olduğunda pencere en erken 19'dan başlar
+      // (rank-2 >= 19), yani ilk 15'in hemen ardından her zaman gerçek bir boşluk vardır —
+      // eski (top 10 tabanlı) mantıktaki "11./12. sırada boşluk yok" özel durumuna burada gerek yok.
+      if(rank > 20 && Array.isArray(topScores) && topScores.length >= 15){
+        const [aboveRes, belowRes] = await Promise.all([
+          fetch(`${SUPABASE_URL}/rest/v1/scores?select=*&mode=eq.${modeKey}&score=gt.${best}${dateFilter}&order=score.asc&limit=2`, {
             headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-          });
-          if(reqId !== rankRequestId) return;
-          const extra = await extraRes.json(); // 10. sıradan (dahil) itibaren tazesi, rank+2'ye kadar
-          const combined = topScores.slice(0, 9).concat(extra); // ilk 9 + taze 10.-... => çakışma yok
-          const avatarMap2 = await fetchAvatarMapForScores(combined, 'general');
-          renderLeaderboard(combined, avatarMap2);
-        } else {
-          const [aboveRes, belowRes] = await Promise.all([
-            fetch(`${SUPABASE_URL}/rest/v1/scores?select=*&mode=eq.${modeKey}&score=gt.${best}${dateFilter}&order=score.asc&limit=2`, {
-              headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-            }),
-            fetch(`${SUPABASE_URL}/rest/v1/scores?select=*&mode=eq.${modeKey}&score=lt.${best}${dateFilter}&order=score.desc&limit=2`, {
-              headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-            })
-          ]);
-          if(reqId !== rankRequestId) return;
-          const above = (await aboveRes.json()).reverse(); // en yakın üst en altta kalacak şekilde ters çevir
-          const below = await belowRes.json();
-          const combined = topScores.slice(0, 10);
-          combined.push({ isGap: true });
-          above.forEach(function(e, idx){ combined.push(Object.assign({}, e, { trueRank: rank - above.length + idx })); });
-          combined.push(Object.assign({}, myRow, { trueRank: rank }));
-          below.forEach(function(e, idx){ combined.push(Object.assign({}, e, { trueRank: rank + 1 + idx })); });
-          const avatarMap2 = await fetchAvatarMapForScores(combined.filter(function(s){ return !s.isGap; }), 'general');
-          renderLeaderboard(combined, avatarMap2);
-        }
+          }),
+          fetch(`${SUPABASE_URL}/rest/v1/scores?select=*&mode=eq.${modeKey}&score=lt.${best}${dateFilter}&order=score.desc&limit=2`, {
+            headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+          })
+        ]);
+        if(reqId !== rankRequestId) return;
+        const above = (await aboveRes.json()).reverse(); // en yakın üst en altta kalacak şekilde ters çevir
+        const below = await belowRes.json();
+        const combined = topScores.slice(0, 15);
+        combined.push({ isGap: true });
+        above.forEach(function(e, idx){ combined.push(Object.assign({}, e, { trueRank: rank - above.length + idx })); });
+        combined.push(Object.assign({}, myRow, { trueRank: rank }));
+        below.forEach(function(e, idx){ combined.push(Object.assign({}, e, { trueRank: rank + 1 + idx })); });
+        const avatarMap2 = await fetchAvatarMapForScores(combined.filter(function(s){ return !s.isGap; }), 'general');
+        renderLeaderboard(combined, avatarMap2);
       }
       bar.style.cssText = 'display:block;width:100%;max-width:320px;margin:0 auto 8px;padding:8px 12px;border-radius:10px;background:rgba(255,215,0,0.14);border:1px solid rgba(255,215,0,0.35);color:#FFE9C7;font-weight:700;font-size:0.85rem;text-align:center;';
     } catch(e){}
@@ -5015,7 +5170,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
         list.innerHTML = `<p style="color:rgba(255,255,255,0.6);text-align:center;margin-top:20px;">${L.hicArkadasSkoruYok}</p>`;
         return;
       }
-      const filteredScores = filterScoresByRange(scores, tab).slice(0,10);
+      const filteredScores = filterScoresByRange(scores, tab).slice(0,20);
       const friendsAvatarMap = await fetchAvatarMapForScores(filteredScores, 'friends');
       renderLeaderboard(filteredScores, friendsAvatarMap);
       return;
@@ -5027,7 +5182,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
       if(tab === 'alltime'){
         // Tüm Zamanlar: önbelleğe alınmış top-50 yeterli, burada zaten "en iyiler" listesi bu.
         const scores = await fetchScores();
-        const generalScores = scores.slice(0, 10);
+        const generalScores = scores.slice(0, 20);
         const generalAvatarMap = await fetchAvatarMapForScores(generalScores, 'general');
         renderLeaderboard(generalScores, generalAvatarMap);
         showMyRank('classic', 'alltime', generalScores);
@@ -5083,7 +5238,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
       document.getElementById('saveScoreWrap').style.opacity = '0.5';
       document.getElementById('saveScoreWrap').style.pointerEvents = 'none';
     } catch(e){
-      msg.textContent = '❌ Hata, tekrar dene';
+      msg.textContent = (e && e.message === 'login-required') ? '⚠️ Skoru kaydetmek için giriş yapmalısın' : '❌ Hata, tekrar dene';
       this.disabled = false;
     }
   });
@@ -5128,13 +5283,13 @@ document.getElementById('restartBtn').addEventListener('click', function() {
 
   document.getElementById('jokerPanelKapat').addEventListener('click', () => {
     document.getElementById('jokerPanel').style.display = 'none';
-    gamePaused = false;
+    resumeAfterJokerFlow();
   });
 
   document.getElementById('jokerPanel').addEventListener('click', (e) => {
     if(e.target === document.getElementById('jokerPanel')) {
       document.getElementById('jokerPanel').style.display = 'none';
-      gamePaused = false;
+      resumeAfterJokerFlow();
     }
   });
 
@@ -5161,7 +5316,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     shuffleUsed = true;
     metaOnJokerUsed();
     document.getElementById('jokerPanel').style.display = 'none';
-    gamePaused = false;
+    resumeAfterJokerFlow();
     // Karıştır: tüm topların hızını rastgele yönlere ver
     balls.forEach((b, i) => {
       const angle = (Math.random() * Math.PI) + Math.PI; // yukarı yönlü açı
@@ -5294,7 +5449,7 @@ document.getElementById('restartBtn').addEventListener('click', function() {
         // şimdi Zaman Modu doğru aralığıyla (Elma-Ananas) yeniden seçiyoruz.
         if(dailyMode) exitDailyMode();
         currentLevel = randomSpawnLevel();
-        nextLevel = randomSpawnLevel();
+        nextQueue = [randomSpawnLevel(), randomSpawnLevel(), randomSpawnLevel()];
         spawnWaitingBall();
         applyBonusJokers();
         maybeShowTutorial();
@@ -5661,6 +5816,8 @@ document.getElementById('restartBtn').addEventListener('click', function() {
   document.getElementById('homeBtn').addEventListener('click', function() {
     pauseGameNow();
     showConfirmModal(function() {
+      manualPauseOn = false;
+      document.getElementById('pauseOverlay').style.display = 'none';
       saveGameState();
       document.getElementById('mainMenu').style.display = 'flex';
       checkSavedGame();
@@ -5880,6 +6037,24 @@ document.getElementById('restartBtn').addEventListener('click', function() {
     localStorage.setItem('ballbasket_music', musicEnabled ? '1' : '0');
     refreshSoundToggles();
     if(musicEnabled) startBgMusic(); else stopBgMusic();
+  });
+
+  // Güvenlik ağı: Android WebView bazen arkaplana geçince JS'i tam duraklatmıyor,
+  // müzik bu yüzden uygulama kapatılsa/arkaplana alınsa bile çalmaya devam edebiliyor.
+  // Sayfa görünürlüğü her değiştiğinde müziği durdurup (gerekiyorsa) AudioContext'i
+  // askıya alıyoruz — geri gelince (hâlâ açıksa) müzik kaldığı yerden yeniden başlar.
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden){
+      stopBgMusic();
+      try { const c = getCtx(); if(c && c.state === 'running') c.suspend(); } catch(e){}
+    } else if(musicEnabled){
+      try { const c = getCtx(); if(c && c.state === 'suspended') c.resume(); } catch(e){}
+      startBgMusic();
+    }
+  });
+  window.addEventListener('pagehide', function(){
+    stopBgMusic();
+    try { const c = getCtx(); if(c) c.suspend(); } catch(e){}
   });
 
   // ---------- Günlük Görevler, Rozetler ve Seri (retention sistemi) ----------
@@ -6165,11 +6340,12 @@ document.getElementById('restartBtn').addEventListener('click', function() {
   function updateAdBtns(){
     [['small','adBtnSmall'],['big','adBtnBig'],['shuffle','adBtnShuffle']].forEach(function(pair){
       const el = document.getElementById(pair[1]);
-      el.style.display = dailyMode ? 'none' : 'inline-block'; // denemede adalet: reklam/banka jokeri yok
       const bankCount = (meta && meta.bank && meta.bank[pair[0]]) || 0;
       const hasBank = bankCount > 0;
-      // Bankada varsa kaç tane biriktiğini de göster (ör. "🎁 x2"), yoksa reklam teklifi
-      el.textContent = adRewardUsed[pair[0]] ? '✓ kullanıldı' : (hasBank ? `🎁 x${bankCount}` : '📺 +1');
+      // GEÇİCİ: AdMob'daki kapatma butonu hatası düzelene kadar reklam teklifini gizliyoruz,
+      // sadece günlük görevlerden biriken "banka" ödülleri (reklamsız) gösteriliyor.
+      el.style.display = (dailyMode || !hasBank) ? 'none' : 'inline-block';
+      el.textContent = adRewardUsed[pair[0]] ? '✓ kullanıldı' : `🎁 x${bankCount}`;
       el.style.opacity = adRewardUsed[pair[0]] ? '0.35' : '1';
     });
   }
@@ -6186,11 +6362,9 @@ document.getElementById('restartBtn').addEventListener('click', function() {
       flashHint(L.bankKullanildi);
       return;
     }
-    if(window.AndroidAds && typeof window.AndroidAds.showRewardedAd === 'function'){
-      window.AndroidAds.showRewardedAd(type);
-    } else {
-      flashHint(L.reklamHazirDegil); // tarayıcı testi / reklam yüklenmedi
-    }
+    // GEÇİCİ: rewarded reklam da aynı SDK/Activity hatasına maruz kalabileceği için kapalı.
+    // Buton zaten bankada ödül yoksa görünmüyor, bu sadece ekstra bir güvenlik önlemi.
+    flashHint(L.reklamHazirDegil);
   }
 
   // Native taraf reklam tamamlanınca burayı çağırır
@@ -6515,6 +6689,12 @@ document.getElementById('restartBtn').addEventListener('click', function() {
   document.getElementById('howToPlayRow').addEventListener('click', function(){
     document.getElementById('gameSettingsModal').style.display = 'none';
     startTutorial();
+  });
+
+  // Hesap silme talebi — MainActivity.kt'deki WebViewClient bunu otomatik olarak
+  // gerçek bir tarayıcı sekmesinde (Custom Tab) açar, oyundan hiç ayrılmadan.
+  document.getElementById('deleteAccountRow').addEventListener('click', function(){
+    window.open('https://fearthedarius-bit.github.io/ballbasket-privacy/hesap-silme.html', '_blank');
   });
 
   // Ayarlar modal kapat
